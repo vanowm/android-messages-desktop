@@ -22,11 +22,7 @@ function createUnreadListener() {
     _mutationList: MutationRecord[],
     _observer: MutationObserver
   ) => {
-    if (document.querySelector(".unread") != null) {
-      app.trayManager?.setUnreadIcon(true);
-    } else {
-      app.trayManager?.setUnreadIcon(false);
-    }
+     app.trayManager?.setUnreadIcon(document.querySelectorAll(".unread").length / 2);
   };
   const observer = new MutationObserver(unreadObserver);
   const node = document.querySelector("main");
