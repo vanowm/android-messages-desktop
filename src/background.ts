@@ -25,6 +25,7 @@ import { CustomBrowserWindow } from "./helpers/window";
 import { baseMenuTemplate } from "./menu/baseMenu";
 import { devMenuTemplate } from "./menu/devMenu";
 import { helpMenuTemplate } from "./menu/helpMenu";
+import settings from "electron-settings";
 
 const state = {
   bridgeInitDone: false,
@@ -145,10 +146,7 @@ if (!isFirstInstance) {
     }
 
     autoUpdater.checkForUpdatesAndNotify();
-
-    mainWindow = new CustomBrowserWindow("main", {
-      width: 1100,
-      height: 800,
+    mainWindow = new CustomBrowserWindow("main", {...{
       autoHideMenuBar: settingsManager.autoHideMenu,
       show: false, //don't show window just yet (issue #229)
       icon: IS_LINUX
@@ -159,6 +157,8 @@ if (!isFirstInstance) {
         webviewTag: true,
         enableRemoteModule: true,
       },
+    },
+     ...(settings.get("windowBounds", {width: 1100, height: 800}) as {})
     });
 
     // set user agent to potentially make google fi work
@@ -221,6 +221,7 @@ if (!isFirstInstance) {
     };
 
     mainWindow.on("close", (event: ElectronEvent) => {
+      settings.set("windowBounds", mainWindow.getBounds() as {});
       if (!shouldExitOnMainWindowClosed()) {
         event.preventDefault();
         mainWindow.hide();
