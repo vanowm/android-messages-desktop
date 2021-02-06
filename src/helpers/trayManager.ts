@@ -1,4 +1,4 @@
-import { app, Menu, Tray, nativeImage, NativeImage} from "electron";
+import { app, Menu, Tray } from "electron";
 import settings from "electron-settings";
 import path from "path";
 import { trayMenuTemplate } from "../menu/trayMenu";
@@ -8,22 +8,15 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
-  DEFAULT_BADGE_TASKBAR
+  DEFAULT_BADGE_TASKBAR,
 } from "./constants";
-
-type Unread = any;
-let timer:any = null;
 
 export class TrayManager {
   public enabled = settings.get(SETTING_TRAY_ENABLED, !IS_LINUX) as boolean;
   public iconPath = this.getIconPath();
   public overlayIconPath = this.getOverlayIconPath();
-  public iconImage:NativeImage = nativeImage.createFromPath(this.iconPath);
 
   public tray: Tray | null = null;
-  private iconCache: Map<string, NativeImage> = new Map();
-  private unreadIconCacheName:string = "unreadIcon";
-  private unreadPrev:Unread = {list: []};
 
   constructor() {
     this.handleTrayEnabledToggle = this.handleTrayEnabledToggle.bind(this);
@@ -57,7 +50,6 @@ export class TrayManager {
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
-      this.setUnreadIcon(this.unreadPrev);
     }
   }
 
@@ -143,7 +135,9 @@ export class TrayManager {
     }
   }
 
-  public setUnreadIcon(unread:Unread): void {
+	private timer:any;
+	private unreadPrev:any = {list: []};
+  public setUnreadIcon(unread:any): void {
     if (IS_WINDOWS)
     {
       let that = this;
@@ -165,8 +159,8 @@ export class TrayManager {
       if (!unread.focus && !unread.changeIcon)
       {
 //	    	app.mainWindow?.flashFrame(true);
-        clearTimeout(timer);
-        timer = setTimeout(function()
+        clearTimeout(this.timer);
+        this.timer = setTimeout(function()
         {
           changeIcon();
         }, 1000);
@@ -210,25 +204,4 @@ export class TrayManager {
       this.tray.setImage(this.iconPath);
     }
   }
-
-  public getIcon(size:number): string
-  {
-    if (IS_MAC)
-      return path.resolve(RESOURCES_PATH, "tray", "icon_macTemplate.png")
-
-    return path.resolve(RESOURCES_PATH, "icons", size + "x" + size + ".png");
-  }
-
-  public unreadIconImage(text:string, icon?:NativeImage): NativeImage | undefined
-  {
-    const iconCacheName = this.unreadIconCacheName + text;
-    if (icon !== undefined)
-      return this.iconCache.set(iconCacheName, icon), undefined;
-
-    if (this.iconCache.has(iconCacheName))
-      return this.iconCache.get(iconCacheName);
-
-    return undefined;
-  }
-
 }

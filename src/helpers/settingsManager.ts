@@ -6,9 +6,12 @@ import {
   SETTING_NOTIFICATION_SOUND,
   SETTING_START_IN_TRAY,
   SETTING_SYSTEM_DARK_MODE,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
   DEFAULT_BADGE_POSITION,
   DEFAULT_BADGE_SCALE,
-  DEFAULT_BADGE_TASKBAR
+  DEFAULT_BADGE_TASKBAR,
 } from "./constants";
 
 export class SettingsManager {
@@ -28,9 +31,19 @@ export class SettingsManager {
     SETTING_SYSTEM_DARK_MODE,
     true
   ) as boolean;
-  public iconBadgeTaskbar = settings.get("iconBadgeTaskbar", DEFAULT_BADGE_TASKBAR) as boolean;
-  public iconBadgePosition = settings.get("iconBadgePosition", DEFAULT_BADGE_POSITION) as number;
-  public iconBadgeScale = settings.get("iconBadgeScale", DEFAULT_BADGE_SCALE) as number;
+  public iconBadgeScale = settings.get(
+  	SETTING_BADGE_POSITION,
+  	DEFAULT_BADGE_POSITION
+  ) as number;
+  public iconBadgePosition = settings.get(
+  	SETTING_BADGE_SCALE,
+  	DEFAULT_BADGE_SCALE
+  ) as number;
+  public iconBadgeTaskbar = settings.get(
+  	SETTING_BADGE_TASKBAR,
+  	DEFAULT_BADGE_TASKBAR
+  ) as boolean;
+
   private watchers: Set<string> = new Set();
 
   constructor() {
