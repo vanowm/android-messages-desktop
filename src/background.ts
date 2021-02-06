@@ -26,7 +26,6 @@ import { CustomBrowserWindow } from "./helpers/window";
 import { baseMenuTemplate } from "./menu/baseMenu";
 import { devMenuTemplate } from "./menu/devMenu";
 import { helpMenuTemplate } from "./menu/helpMenu";
-import settings from "electron-settings";
 
 const state = {
   bridgeInitDone: false,
