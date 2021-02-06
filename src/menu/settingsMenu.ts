@@ -6,7 +6,13 @@ import {
   MenuItemConstructorOptions,
 } from "electron";
 import settings from "electron-settings";
-import { IS_LINUX, IS_MAC, IS_WINDOWS, SETTING_TRAY_ENABLED, DEFAULT_BADGE_POSITION, DEFAULT_BADGE_SCALE} from "../helpers/constants";
+import {
+  IS_LINUX,
+  IS_MAC, IS_WINDOWS,
+  SETTING_TRAY_ENABLED,
+  DEFAULT_BADGE_POSITION,
+  DEFAULT_BADGE_SCALE,
+} from "../helpers/constants";
 import { separator } from "./items/separator";
 
 export const settingsMenu: MenuItemConstructorOptions = {
@@ -108,9 +114,9 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
       click: (item) => {
         settings.set("useSystemDarkModePref", item.checked);
       },
-    },
-    separator
+    }
   );
+/* unread badge */
   let submenu:any = [],
       // since Electron doesn't provide any means highlight default menu item, we can use UNICODE bold/italic characters instead
       defaultHighlight = (():Function =>
@@ -145,7 +151,7 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
   });
 
   submenu = [];
-  for(let i = 0.25, n; i <= 2; i += 0.25)
+  for(let i = 0.25, n; i <= 2; i += 0.25)
   {
     n = i * 100 + "%";
     submenu[submenu.length] = {
@@ -174,4 +180,5 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
       },
     });
   }
+
 }

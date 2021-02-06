@@ -87,20 +87,6 @@ if (!isFirstInstance) {
       trayManager.handleTrayEnabledToggle
     );
 
-    const settingsWatcherList = ["iconBadgePosition", "iconBadgeScale", "iconBadgeTaskbar"];
-    for(let i = 0; i < settingsWatcherList.length; i++)
-    {
-      let name = settingsWatcherList[i];
-      settingsManager.addWatcher(
-        name,
-        function(newValue:any)
-        {
-          let obj:any = {};
-          obj[name] = newValue;
-          mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, obj);
-        }
-      );
-    }
     setApplicationMenu();
     const menuInstance = Menu.getApplicationMenu();
 
@@ -156,12 +142,28 @@ if (!isFirstInstance) {
         settingsManager.hideNotificationContent;
       (useSystemDarkModeMenuItem as Electron.MenuItem).checked =
         settingsManager.systemDarkMode;
+
       (menuInstance.getMenuItemById("iconBadgePosition"+settingsManager.iconBadgePosition) as Electron.MenuItem).checked = true;
       (menuInstance.getMenuItemById("iconBadgeScale"+settingsManager.iconBadgeScale) as Electron.MenuItem).checked = true;
       if (IS_WINDOWS)
       {
         (menuInstance.getMenuItemById("iconBadgeTaskbar") as Electron.MenuItem).checked = settingsManager.iconBadgeTaskbar;
       }
+
+    }
+    const settingsWatcherList = ["iconBadgePosition", "iconBadgeScale", "iconBadgeTaskbar"];
+    for(let i = 0; i < settingsWatcherList.length; i++)
+    {
+      let name = settingsWatcherList[i];
+      settingsManager.addWatcher(
+        name,
+        function(newValue:any)
+        {
+          let obj:any = {};
+          obj[name] = newValue;
+          mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, obj);
+        }
+      );
     }
 
     autoUpdater.checkForUpdatesAndNotify();
