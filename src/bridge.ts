@@ -58,6 +58,10 @@ window.addEventListener("load", () => {
     childList: true,
     attributes: true,
   });
+  // part of #217 (https://github.com/OrangeDrangon/android-messages-desktop/issues/217)
+  const style = document.createElement("style");
+  style.innerHTML = 'body.hiddenOverlay mws-lightbox, body.hiddenOverlay [class*="cdk-overlay"], body.hiddenOverlay [class*="cdk-overlay"] *{display:none!important;z-index:-999999!important;visibility:hidden!important;position:absolute!important;left:-100%!important;top:-100%!important;width:0!important;height:0!important}';
+  document.head.appendChild(style);
 });
 
 ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
