@@ -105,10 +105,7 @@ window.Notification = function (title: string, options: NotificationOptions) {
         body: options.body || "",
       };
 
-  notificationOpts.silent = settings.get(
-    SETTING_NOTIFICATION_SOUND,
-    true
-  ) as boolean;
+  notificationOpts.silent = true;
 
   const notification = new ElectronNotification(notificationOpts);
   notification.addListener("click", () => {
@@ -123,7 +120,10 @@ window.Notification = function (title: string, options: NotificationOptions) {
   if (!app.mainWindow?.isFocused()) {
     app.mainWindow?.flashFrame(true);
   }
-  return notification;
+  return settings.get(
+    SETTING_NOTIFICATION_SOUND,
+    true
+  ) as boolean && notification;
 };
 // THIS IS NEEDED FOR GOOGLE TO ISSUE NOTIFICATIONS
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
