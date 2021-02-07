@@ -6,7 +6,6 @@ import {
   SETTING_HIDE_NOTIFICATION,
   RESOURCES_PATH,
   SETTING_NOTIFICATION_SOUND,
-  SETTING_START_IN_TRAY,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
@@ -59,9 +58,10 @@ window.addEventListener("load", () => {
     childList: true,
     attributes: true,
   });
-
-  // a work around issue #229 (https://github.com/OrangeDrangon/android-messages-desktop/issues/229)
-  if (!settings.get(SETTING_START_IN_TRAY)) app.mainWindow?.show();
+  // part of #217 (https://github.com/OrangeDrangon/android-messages-desktop/issues/217)
+  const style = document.createElement("style");
+  style.innerHTML = 'body.hiddenOverlay mws-lightbox, body.hiddenOverlay [class*="cdk-overlay"], body.hiddenOverlay [class*="cdk-overlay"] *{display:none!important;z-index:-999999!important;visibility:hidden!important;position:absolute!important;left:-100%!important;top:-100%!important;width:0!important;height:0!important}';
+  document.head.appendChild(style);
 });
 
 ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
