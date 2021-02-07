@@ -158,7 +158,7 @@ if (!isFirstInstance) {
         enableRemoteModule: true,
       },
     },
-     ...(settings.get("windowBounds", {width: 1100, height: 800}) as {})
+     ...((({ x, y, width, height }) => ({ x, y, width, height }))(settings.get("windowBounds", {width: 1100, height: 800}) as any))
     });
 
     // set user agent to potentially make google fi work
