@@ -8,7 +8,7 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
-  DEFAULT_BADGE_TASKBAR,
+  EVENT_UPDATE_USER_SETTING,
 } from "./constants";
 
 export class TrayManager {
@@ -50,6 +50,8 @@ export class TrayManager {
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
+      app.mainWindow?.webContents.send(EVENT_UPDATE_USER_SETTING, {trayEnabledPref: this.enabled});
+
     }
   }
 
@@ -135,73 +137,17 @@ export class TrayManager {
     }
   }
 
-	private timer:any;
-	private unreadPrev:any = {list: []};
-  public setUnreadIcon(unread:any): void {
-    if (IS_WINDOWS)
-    {
-      let that = this;
-      let changeIcon = function()
-      {
-        app.mainWindow?.setIcon(
-          (settings.get("iconBadgeTaskbar", DEFAULT_BADGE_TASKBAR)
-            ? unread.icon64
-              || unread.icon128
-              || unread.icon256
-              || unread.icon32
-              || unread.icon24
-              || unread.icon16
-              || unread.icon
-            : ""
-          ) || that.iconPath);
+// merged into unreadManager
+/*
+  public setUnreadIcon(toggle: boolean): void {
+    if (this.tray && this.overlayIconPath != null) {
+      this.tray.setToolTip("Android Messages");
+      if (toggle) {
+        this.tray.setImage(this.overlayIconPath);
+      } else {
+        this.tray.setImage(this.iconPath);
       }
-      changeIcon();
-      if (!unread.focus && !unread.changeIcon)
-      {
-//	    	app.mainWindow?.flashFrame(true);
-        clearTimeout(this.timer);
-        this.timer = setTimeout(function()
-        {
-          changeIcon();
-        }, 1000);
-      }
-    }
-    else
-      app.setBadgeCount(unread.list.length); //does this work on macOS/Linux?
-
-    if (!this.tray)
-      return;
-
-    this.unreadPrev = unread;
-    const tooltip: string = "Android Messages v" + app.getVersion(),
-          textMaxLength = 22; // trancate text
-
-    this.tray.setToolTip(tooltip);
-    if (unread.list.length) {
-      this.tray.setImage(unread.icon
-                          || unread.icon16
-                          || unread.icon24
-                          || unread.icon32
-                          || unread.icon64
-                          || unread.icon128
-                          || unread.icon256
-                          || this.iconPath);
-      let data:string = "";
-      for(let i = 0, info:any, text:string; i < unread.list.length; i++)
-      {
-        info = unread.list[i];
-        text = info.text.replace(/(\r\n|\n+)+/g, " ");
-        if (text.length > textMaxLength)
-          text = text.slice(0, textMaxLength) + "...";
-        if (text)
-          text = ":\n " + text;
-
-        data += (data ? "\n" : "") + info.name + text;
-      }
-      if (data)
-        this.tray.setToolTip(tooltip + "\n\n" + data);
-    } else {
-      this.tray.setImage(this.iconPath);
     }
   }
+*/
 }

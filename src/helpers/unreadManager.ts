@@ -1,4 +1,4 @@
-import {remote, NativeImage, nativeImage} from "electron";
+import {app as _app, remote, NativeImage, nativeImage, MenuItemConstructorOptions} from "electron";
 import path from "path";
 import settings from "electron-settings";
 import {
@@ -11,9 +11,17 @@ import {
   DEFAULT_BADGE_TASKBAR
 } from "./constants";
 
-const {app} = remote;
+let app:any;
+if (remote && remote.app)
+  app = remote.app;
+else
+  app = _app;
 
 export class UnreadManager {
+  constructor(document:any)
+  {
+    this.document = document;
+  }
 	private timer:any;
 	private prevUnread:any = {list:[]};
   private iconCache: Map<string, NativeImage> = new Map();
@@ -49,16 +57,21 @@ export class UnreadManager {
 	  return this.isParent(node.parentNode, filter);
 	}
 
+  public document:any;
+  private get window()
+  {
+    return this.document?.defaultView;
+  }
 	//app.mainWindow?.isFocused() is unreliable
 	public isFocused(f?:boolean):boolean
 	{
 		if (f !== undefined)
 		{
-			document?.body?.setAttribute("focus", f ? "true" : "");
-		  document?.body?.setAttribute("changeicon", "");
+			this.document?.body?.setAttribute("focus", f ? "true" : "");
+		  this.document?.body?.setAttribute("changeicon", "");
 		}
 
-		return document?.body?.getAttribute("focus") == "true" && app.mainWindow?.isFocused() as boolean;
+		return this.document?.body?.getAttribute("focus") == "true" && app.mainWindow?.isFocused() as boolean;
 	}
 
 	public generateIcon(opt:any, callback:Function): void
@@ -330,7 +343,7 @@ export class UnreadManager {
     if (unread.icon)
     {
       // re-use cached icons
-      app.trayManager?.setUnreadIcon(unread);
+      this.setUnreadIcon(unread);
     }
     else
     {
@@ -346,7 +359,7 @@ export class UnreadManager {
           unread["icon" + i] = iconSizes[i].icon;
           this.unreadIconImage(unreadID + "_" + i, iconSizes[i].icon); // cache new icon
         }
-        app.trayManager?.setUnreadIcon(unread); // change tray icon
+        this.setUnreadIcon(unread); // change tray icon
       };
 
       for(let i in iconSizes)
@@ -378,4 +391,147 @@ export class UnreadManager {
     return undefined;
   }
 
+  // since Electron doesn't provide any means highlight default menu item, we can use UNICODE bold/italic characters instead
+  private type = [
+                 /*bold*/        [120211 /*A-Z*/, 120205 /*a-z*/, 120764 /*0-9*/],
+                 /*bold-italic*/ [120315 /*A-Z*/, 120309 /*a-z*/, 120764 /*0-9 (no italic available)*/]
+              ];
+  private defaultHighlight = (text:string|number, t?:any):string =>
+  {
+      t = this.type[t] || t && t.length == 3 ? t : this.type[0];
+    return (text + "").replace(/[a-zA-Z0-9]/g, (a) => String.fromCodePoint((a.codePointAt(0) || 0) + t[/[0-9]/.test(a) ? 2 : /[a-z]/.test(a) ? 1 : 0]));
+  }
+
+  public getMenu(id:string):MenuItemConstructorOptions
+  {
+    const submenu:any = [];
+    switch (id)
+    {
+      case "iconBadgePosition":
+        for(let i = 0, l = ["Top Left", "Top Right", "Bottom Right", "Bottom Left", "Center"]; i < l.length; i++)
+        {
+          submenu[submenu.length] = {
+            id: id + i,
+            label: i == DEFAULT_BADGE_POSITION ? this.defaultHighlight(l[i]) : l[i],
+            value: i,
+            type: "radio",
+            click: (item:any) => {
+              settings.set(id, item.value);
+            },
+          };
+        }
+        return {
+          id: id,
+          label: "Unread icon badge position",
+          submenu: submenu
+        }
+
+      case "iconBadgeScale":
+        for(let i = 0.25, n; i <= 2; i += 0.25)
+        {
+          n = i * 100 + "%";
+          submenu[submenu.length] = {
+            id: id + i,
+            label: i == DEFAULT_BADGE_SCALE ? this.defaultHighlight(n) : n,
+            value: i,
+            type: "radio",
+            click: (item:any) => {
+              settings.set(id, item.value);
+            },
+          };
+        }
+        return {
+          id: id,
+          label: "Unread icon badge size",
+          submenu: submenu
+        };
+
+      case "iconBadgeTaskbar":
+      default:
+        return {
+          id: id,
+          label: "Unread icon badge on taskbar",
+          type: "checkbox",
+          click: (item:any) => {
+            settings.set(id, item.checked);
+          },
+        }
+    }
+  }
+
+  private unreadPrev:any = {list: []};
+  public setUnreadIcon(unread:any): void {
+    const tray:any = app.trayManager;
+    if (IS_WINDOWS)
+    {
+      let changeIcon = function()
+      {
+        app.mainWindow?.setIcon(
+          (settings.get("iconBadgeTaskbar", DEFAULT_BADGE_TASKBAR)
+            ? unread.icon64
+              || unread.icon128
+              || unread.icon256
+              || unread.icon32
+              || unread.icon24
+              || unread.icon16
+              || unread.icon
+            : ""
+          ) || tray.iconPath);
+      }
+      changeIcon();
+      if (!unread.focus && !unread.changeIcon)
+      {
+//	    	app.mainWindow?.flashFrame(true);
+        clearTimeout(this.timer);
+        this.timer = setTimeout(function()
+        {
+          changeIcon();
+        }, 1000);
+      }
+    }
+    else
+      app.setBadgeCount(unread.list.length); //does this work on macOS/Linux?
+
+    if (!tray.tray)
+      return;
+
+    this.unreadPrev = unread;
+    const tooltip: string = "Android Messages v" + app.getVersion(),
+          textMaxLength = 22; // trancate text
+
+    tray.tray.setToolTip(tooltip);
+    if (unread.list.length) {
+      tray.tray.setImage(unread.icon
+                          || unread.icon16
+                          || unread.icon24
+                          || unread.icon32
+                          || unread.icon64
+                          || unread.icon128
+                          || unread.icon256
+                          || tray.iconPath);
+      let data:string = "";
+      for(let i = 0, info:any, text:string; i < unread.list.length; i++)
+      {
+        info = unread.list[i];
+        text = info.text.replace(/(\r\n|\n+)+/g, " ");
+        if (text.length > textMaxLength)
+          text = text.slice(0, textMaxLength) + "...";
+        if (text)
+          text = ":\n " + text;
+
+        data += (data ? "\n" : "") + info.name + text;
+      }
+      if (data)
+        tray.tray.setToolTip(tooltip + "\n\n" + data);
+    } else {
+      tray.tray.setImage(tray.iconPath);
+    }
+  }
 }
+const doc = typeof(document) != "undefined" ? document : undefined,
+      um = new UnreadManager(doc);
+
+if (!app.unreadManager && doc)
+  app.unreadManager = um;
+
+export const unreadManager = app.unreadManager || um;

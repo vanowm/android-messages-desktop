@@ -5,15 +5,16 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
 } from "electron";
+
 import settings from "electron-settings";
 import {
   IS_LINUX,
   IS_MAC, IS_WINDOWS,
   SETTING_TRAY_ENABLED,
-  DEFAULT_BADGE_POSITION,
-  DEFAULT_BADGE_SCALE,
 } from "../helpers/constants";
 import { separator } from "./items/separator";
+
+import { unreadManager } from "../helpers/unreadManager";
 
 export const settingsMenu: MenuItemConstructorOptions = {
   label: IS_MAC ? "&Preferences" : "&Settings",
@@ -117,68 +118,11 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
     }
   );
 /* unread badge */
-  let submenu:any = [],
-      // since Electron doesn't provide any means highlight default menu item, we can use UNICODE bold/italic characters instead
-      defaultHighlight = (():Function =>
-      {
-        let type = [
-                     /*bold*/        [120211 /*A-Z*/, 120205 /*a-z*/, 120764 /*0-9*/],
-                     /*bold-italic*/ [120315 /*A-Z*/, 120309 /*a-z*/, 120764 /*0-9 (no italic available)*/]
-                  ];
-        return (text:string|number, t:any):string =>
-        {
-            t = type[t] || t && t.length == 3 ? t : type[0];
-          return (text + "").replace(/[a-zA-Z0-9]/g, (a) => String.fromCodePoint((a.codePointAt(0) || 0) + t[/[0-9]/.test(a) ? 2 : /[a-z]/.test(a) ? 1 : 0]));
-        }
-      })();
-
-  for(let i = 0, l = ["Top Left", "Top Right", "Bottom Right", "Bottom Left", "Center"]; i < l.length; i++)
-  {
-    submenu[submenu.length] = {
-      id: "iconBadgePosition" + i,
-      label: i == DEFAULT_BADGE_POSITION ? defaultHighlight(l[i]) : l[i],
-      value: i,
-      type: "radio",
-      click: (item:any) => {
-        settings.set("iconBadgePosition", item.value);
-      },
-    };
-  }
-  settingsMenu.submenu.push({
-    id: "iconBadgePosition",
-    label: "Unread icon badge position",
-    submenu: submenu
-  });
-
-  submenu = [];
-  for(let i = 0.25, n; i <= 2; i += 0.25)
-  {
-    n = i * 100 + "%";
-    submenu[submenu.length] = {
-      id: "iconBadgeScale" + i,
-      label: i == DEFAULT_BADGE_SCALE ? defaultHighlight(n) : n,
-      value: i,
-      type: "radio",
-      click: (item:any) => {
-        settings.set("iconBadgeScale", item.value);
-      },
-    };
-  }
-  settingsMenu.submenu.push({
-    id: "iconBadgeScale",
-    label: "Unread icon badge size",
-    submenu: submenu
-  });
+  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgePosition"))
+  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeScale"));
   if (IS_WINDOWS)
   {
-    settingsMenu.submenu.push({
-      id: "iconBadgeTaskbar",
-      label: "Unread icon badge on taskbar",
-      type: "checkbox",
-      click: (item) => {
-        settings.set(item.id, item.checked);
-      },
-    });
+    settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeTaskbar"));
   }
 
 }
