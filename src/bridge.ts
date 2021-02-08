@@ -13,10 +13,10 @@ import { popupContextMenu } from "./menu/contextMenu";
 import settings from "electron-settings";
 import { getProfileImg } from "./helpers/profileImage";
 
-import {UnreadManager} from "./helpers/unreadManager";
-const unreadManager = new UnreadManager();
 
 const { Notification: ElectronNotification, app } = remote;
+
+import {unreadManager} from "./helpers/unreadManager";
 
 // Electron (or the build of Chromium it uses?) does not seem to have any default right-click menu, this adds our own.
 remote.getCurrentWebContents().addListener("context-menu", popupContextMenu);
@@ -94,6 +94,7 @@ ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
       case "enterToSend":
         handleEnterPrefToggle(settingsList.enterToSend);
         break;
+      case "trayEnabledPref":
       case "iconBadgePosition":
       case "iconBadgeScale":
       case "iconBadgeTaskbar":
@@ -158,4 +159,3 @@ window.Notification = function (title: string, options: NotificationOptions) {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 Notification.permission = "granted";
-Notification.requestPermission = async () => "granted";
