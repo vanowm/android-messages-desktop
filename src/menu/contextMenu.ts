@@ -2,6 +2,7 @@ import {
   ContextMenuParams,
   MenuItemConstructorOptions,
   remote,
+  clipboard,
 } from "electron";
 
 const { Menu, app } = remote;
@@ -13,7 +14,6 @@ const { Menu, app } = remote;
 const standardMenuTemplate: MenuItemConstructorOptions[] = [
   {
     label: "Copy",
-    role: "copy",
   },
   {
     type: "separator",
@@ -57,6 +57,17 @@ const textMenuTemplate: MenuItemConstructorOptions[] = [
   },
 ];
 const cacheURL:Map<string, string> = new Map();
+const findMsg = function (node:Element|Element|null):HTMLElement|null
+{
+  if (!node)
+    return null;
+
+  if (node.tagName == "MWS-MESSAGE-PART-CONTENT")
+    return node as HTMLElement;
+
+  return findMsg(node.parentNode as Element );
+}
+
 export const popupContextMenu = async (
   event: Electron.Event,
   params: ContextMenuParams
@@ -199,7 +210,7 @@ export const popupContextMenu = async (
       }) //observer
 
       const win = remote.getCurrentWindow();
-      const img = document.elementFromPoint(params.x, params.y) as HTMLElement;
+      const img = document.elementFromPoint(params.x, params.y) as HTMLImageElement;
       const overlay = document.querySelector("body > div.cdk-overlay-container") as HTMLElement;
       const cachedUrl = cacheURL.get(url);
       let timer:any,
@@ -208,7 +219,8 @@ export const popupContextMenu = async (
       if (cachedUrl)
         url = cachedUrl;
 
-      if (img.classList.contains("image-msg") && !cachedUrl)
+      // images with width or height at 600px most probably a preview of larger images, lets try download them
+      if (img.classList.contains("image-msg") && !cachedUrl && (img.naturalWidth == 600 || img.naturalHeight == 600) )
       {
         // menu requested on image preview, let's load the original image
         enabled = false;
@@ -251,7 +263,22 @@ export const popupContextMenu = async (
         textInputMenu.popup();
       } else {
         // Omit options pertaining to input fields if this isn't one
-        const standardInputMenu = Menu.buildFromTemplate(standardMenuTemplate);
+        let menu:any = standardMenuTemplate;
+        menu[0].click = () =>
+        {
+          let text:string = window.getSelection()?.toString() as string;
+          if (text == "" && params.linkURL)
+          {
+            text = params.linkURL as string;
+          }
+          if (!text)
+          {
+            text = findMsg(document.elementFromPoint(params.x, params.y))?.textContent as string;
+          }
+          if (text)
+            clipboard.writeText(text);
+        }
+        const standardInputMenu = Menu.buildFromTemplate(menu);
         standardInputMenu.popup();
       }
   }
