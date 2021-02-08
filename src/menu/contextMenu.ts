@@ -16,11 +16,13 @@ const standardMenuTemplate: MenuItemConstructorOptions[] = [
     label: "Copy",
   },
   {
+    label: "Copy Link",
+  },
+  {
     type: "separator",
   },
   {
     label: "Select All",
-    role: "selectAll",
   },
 ];
 
@@ -219,7 +221,6 @@ export const popupContextMenu = async (
       if (cachedUrl)
         url = cachedUrl;
 
-      // images with width or height at 600px most probably a preview of larger images, lets try download them
       if (img.classList.contains("image-msg") && !cachedUrl && (img.naturalWidth == 600 || img.naturalHeight == 600) )
       {
         // menu requested on image preview, let's load the original image
@@ -263,20 +264,50 @@ export const popupContextMenu = async (
         textInputMenu.popup();
       } else {
         // Omit options pertaining to input fields if this isn't one
-        let menu:any = standardMenuTemplate;
+        let menu:any = [...standardMenuTemplate];
+        const node = document.elementFromPoint(params.x, params.y) as HTMLElement;
+        const msgNode = findMsg(node) as HTMLElement;
+        if (!msgNode)
+          return;
+
+        const sel = document.getSelection() as Selection;
+        let text:string = "";
+        if (sel.containsNode(msgNode, true))
+          text = sel.toString();
+
+        if (text == "")
+        {
+          text = msgNode?.textContent as string;
+          const range = document.createRange();
+          range.selectNode(msgNode);
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.addRange(range);
+          text = window.getSelection()?.toString() as string;
+          window.getSelection()?.removeAllRanges();
+        }
+
         menu[0].click = () =>
         {
-          let text:string = window.getSelection()?.toString() as string;
-          if (text == "" && params.linkURL)
-          {
-            text = params.linkURL as string;
-          }
-          if (!text)
-          {
-            text = findMsg(document.elementFromPoint(params.x, params.y))?.textContent as string;
-          }
-          if (text)
+          if (text != "")
             clipboard.writeText(text);
+        }
+
+        menu[1].click = () =>
+        {
+          clipboard.writeText(params.linkURL);
+        };
+
+        menu[3].click = () =>
+        {
+          const range = document.createRange();
+          range.selectNode(msgNode);
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.addRange(range);
+        }
+        menu[0].enabled = text != ""
+        if (!params.linkURL || node.tagName != "A")
+        {
+          menu.splice(1, 1);
         }
         const standardInputMenu = Menu.buildFromTemplate(menu);
         standardInputMenu.popup();
