@@ -45,7 +45,7 @@ export class TrayManager {
 
   public startIfEnabled(): void {
     if (this.enabled) {
-      this.tray = new Tray(this.iconPath);
+      this.tray = new Tray(this.iconPath, this.stringToUuid(this.iconPath));
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
@@ -132,6 +132,32 @@ export class TrayManager {
         app.exit(0);
       }
     }
+  }
+
+  private stringToUuid (_str:string|undefined):string
+  {
+    let str:string = _str || "";
+    if (_str === undefined || !_str.length)
+      str = "" + Math.random() * new Date().getTime();
+
+    let c = 0;
+    for (let i = 0; i < str.length; i++)
+      c = (c + (str.charCodeAt(i) * (i + 1) - 1)) & 0xfffffffffffff;
+
+    str = (c).toString(16) + str;
+    let p = str.length;
+    return 'xxxxxxxx-xxxx-mxxx-nxxx-xxxxxxxxxxxx'.replace(/[xmn]/g, function (c, i, s)
+    {
+      s = p = (str[(i ** i + p  + 1) % str.length]).charCodeAt(0) + p  + i;
+      if (c == "x")
+        s  %= 16;
+      else if (c == "m")
+        s = (s % 4) + 1;
+      else
+        s = (s % 4) + 8;
+
+      return s.toString(16);
+    });
   }
 
   public setUnreadIcon(toggle: boolean): void {
