@@ -45,7 +45,7 @@ export class TrayManager {
 
   public startIfEnabled(): void {
     if (this.enabled) {
-      this.tray = new Tray(this.iconPath, this.stringToUuid(this.iconPath));
+      this.tray = new Tray(this.iconPath, this.stringToGUID(this.iconPath));
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
@@ -134,29 +134,29 @@ export class TrayManager {
     }
   }
 
-  private stringToUuid (_str:string|undefined):string
+// generate GUID from a string
+// https://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid/66085896#66085896
+  private stringToGUID (str:string):string
   {
-    let str:string = _str || "";
-    if (_str === undefined || !_str.length)
-      str = "" + Math.random() * new Date().getTime();
-
-    let c = 0;
+    let seed = 0;
+    // generate a seed from our string
     for (let i = 0; i < str.length; i++)
-      c = (c + (str.charCodeAt(i) * (i + 1) - 1)) & 0xfffffffffffff;
+      seed = (seed + (str.charCodeAt(i) * (i + 1) - 1)) & 0xfffffffffffff;
 
-    str = (c).toString(16) + str;
-    let p = str.length;
-    return 'xxxxxxxx-xxxx-mxxx-nxxx-xxxxxxxxxxxx'.replace(/[xmn]/g, function (c, i, s)
+    str = seed.toString(16) + str;
+    seed = str.length;
+    return 'xxxxxxxx-xxxx-mxxx-nxxx-xxxxxxxxxxxx'.replace(/[xmn]/g, function (char, index, num) //
     {
-      s = p = (str[(i ** i + p  + 1) % str.length]).charCodeAt(0) + p  + i;
-      if (c == "x")
-        s  %= 16;
-      else if (c == "m")
-        s = (s % 4) + 1;
+      //convert a letter from string into integer
+      num = seed = (str[(index ** index + seed  + 1) % str.length]).charCodeAt(0) + seed  + index;
+      if (char == "x")
+        num  %= 16; //make sure it's 0-9A-F
+      else if (char == "m")
+        num = (num % 4) + 1; //limit to 1-5
       else
-        s = (s % 4) + 8;
+        num = (num % 4) + 8; //limit to 8,9,a,b
 
-      return s.toString(16);
+      return num.toString(16); //convert into HEX
     });
   }
 
