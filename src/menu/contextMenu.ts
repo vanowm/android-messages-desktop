@@ -11,22 +11,31 @@ const { Menu, app } = remote;
 // IT HAS NO SIDE EFFECTS
 // I WOULD NOT DO IT BUT I AM NOT POSITIVE HOW TO PROPERLY TYPE IT
 
-const standardMenuTemplate: MenuItemConstructorOptions[] = [
-  {
-    label: "Copy",
-  },
-  {
-    label: "Copy Link",
-  },
-  {
-    type: "separator",
-  },
-  {
-    label: "Select All",
-  },
-];
+const SAVEAS = 0,
+      COPY = 1,
+      COPYL = 2,
+      SEP1 = 3,
+      SELALL = 4;
 
-const textMenuTemplate: MenuItemConstructorOptions[] = [
+const standardMenuTemplate: MenuItemConstructorOptions[] = []
+standardMenuTemplate[SAVEAS] = {
+  label: "Save # As...",
+};
+standardMenuTemplate[COPY] = {
+  label: "Copy Message",
+};
+standardMenuTemplate[COPYL] = {
+  label: "Copy Link",
+};
+standardMenuTemplate[SEP1] = {
+  type: "separator",
+};
+standardMenuTemplate[SELALL] = {
+  label: "Select All",
+};
+
+const textMenuTemplate: MenuItemConstructorOptions[] =
+[
   {
     label: "Undo",
     role: "undo",
@@ -58,35 +67,116 @@ const textMenuTemplate: MenuItemConstructorOptions[] = [
     role: "selectAll",
   },
 ];
-const cacheURL:Map<string, string> = new Map();
-const findMsg = function (node:Element|Element|null):HTMLElement|null
-{
-  if (!node)
-    return null;
 
-  if (node.tagName == "MWS-MESSAGE-PART-CONTENT")
-    return node as HTMLElement;
 
-  return findMsg(node.parentNode as Element );
-}
+export const popupContextMenu = async (event: Electron.Event, params: ContextMenuParams): Promise<void> => {
 
-export const popupContextMenu = async (
-  event: Electron.Event,
-  params: ContextMenuParams
-): Promise<void> => {
+  const node = document.elementFromPoint(params.x, params.y) as HTMLElement;
+  const msgNode = findMsg(node) as HTMLElement;
+
+  if (!msgNode && !params.isEditable)
+    return;
+
+  let menu:any,
+      menuIsClosing = false,
+      callback:Function|null = null;
+
+  const isLightbox = msgNode && msgNode.tagName == "MWS-LIGHTBOX";
+  const win = remote.getCurrentWindow();
+
+  const menuTemplate:MenuItemConstructorOptions[] = [...(params.isEditable ? textMenuTemplate : standardMenuTemplate)];
+  const showMenu = (callback?:Function|null) =>
+  {
+    menu = Menu.buildFromTemplate(menuTemplate);
+    menu.popup({
+      x: params.x,
+      y: params.y,
+      window: win,
+      callback: () => {
+        (menu as unknown) = null; // Unsure if memory would leak without this (Clean up, clean up, everybody do your share)
+        if (typeof callback == "function")
+          callback();
+      }
+    });
+  } // showMenu()
+
+  if (params.isEditable) {
+
+    if (params.misspelledWord) {
+      menuTemplate.unshift({ type: "separator" });
+      menuTemplate.unshift({
+        label: "Add to Dictionary",
+        click: () =>
+          app.mainWindow?.webContents.session.addWordToSpellCheckerDictionary(
+            params.misspelledWord
+          ),
+      });
+      menuTemplate.unshift({ type: "separator" });
+      for (const suggestion of params.dictionarySuggestions.reverse()) {
+        menuTemplate.unshift({
+          label: suggestion,
+          click: () =>
+            remote.getCurrentWebContents().replaceMisspelling(suggestion),
+        });
+      }
+    }
+    showMenu();
+    return;
+  }
+  // Omit options pertaining to input fields if this isn't one
+
+  const sel = document.getSelection() as Selection;
+  let text:string = "";
+  if (sel.containsNode(msgNode, true))
+    text = sel.toString();
+
+  if (text == "")
+  {
+    text = msgNode?.textContent as string;
+    const range = document.createRange();
+    range.selectNode(msgNode);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    text = window.getSelection()?.toString() as string;
+    window.getSelection()?.removeAllRanges();
+  }
+
+  menuTemplate[COPY].click = () =>
+  {
+    if (text != "")
+      clipboard.writeText(text);
+  }
+
+  menuTemplate[COPYL].click = () =>
+  {
+    clipboard.writeText(params.linkURL);
+  };
+
+  menuTemplate[SELALL].click = () =>
+  {
+    const range = document.createRange();
+    range.selectNode(msgNode);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+  }
+  menuTemplate[COPY].enabled = msgNode.textContent?.trim() != "" && !isLightbox;
+  menuTemplate[SELALL].enabled = msgNode.textContent?.trim() != "" && !isLightbox;
+  menuTemplate[COPYL].visible = (params.linkURL && node.tagName == "A") as boolean;
+
   switch (params.mediaType) {
     case "video":
     case "image":
       if (!params.srcURL || !params.srcURL.length)
         break;
 
-      const mediaType =
-        params.mediaType[0].toUpperCase() + params.mediaType.slice(1);
+      const mediaType = params.mediaType[0].toUpperCase() + params.mediaType.slice(1);
 
-      let url = params.srcURL,
-          menuIsClosing = false;
+      let url = params.srcURL;
 
-      const saveAs = () =>
+      menuTemplate.splice(COPYL, 1); // remove copy link
+      menuTemplate[SAVEAS].visible = true;
+      menuTemplate[SAVEAS].label = menuTemplate[SAVEAS].label?.replace("#", mediaType);
+      menuTemplate[SAVEAS].click = () =>
       {
         const link = document.createElement('a'),
               d = new Date(),
@@ -120,34 +210,17 @@ export const popupContextMenu = async (
         }
       } // saveAs()
 
-      const menu = {
-        id: "saveas",
-        label: `Save ${mediaType} As...`,
-        sublabel: "",
-        click: saveAs,
-      }
-
-      const showMenu = () =>
+      callback = () =>
       {
-        let mediaInputMenu = Menu.buildFromTemplate([menu]);
-        mediaInputMenu.popup({
-          x: params.x,
-          y: params.y,
-          window: win,
-          callback: () => {
-            (mediaInputMenu as unknown) = null; // Unsure if memory would leak without this (Clean up, clean up, everybody do your share)
-            if (!menuIsClosing)
-            {
-              (overlay.firstChild as HTMLElement)?.click();
-              observer.disconnect();
-              setTimeout(()=>document.body.classList.toggle("hiddenOverlay", false), 300);
-              clearTimeout(timer);
-            }
-            menuIsClosing = false;
-          },
-        });
-        return mediaInputMenu;
-      } // showMenu()
+        if (!menuIsClosing)
+        {
+          (overlay.firstChild as HTMLElement)?.click();
+          observer.disconnect();
+          setTimeout(()=>document.body.classList.toggle("hiddenOverlay", false), 300);
+          clearTimeout(timer);
+        }
+        menuIsClosing = false;
+      }
 
       const urlLoaded = (src:string, sublabel:string="") =>
       {
@@ -158,14 +231,14 @@ export const popupContextMenu = async (
         // cache new url for both old and new urls, it's probably redundent, since new url will be "attached" to the preview image
         cacheURL.set(params.srcURL, src);
         cacheURL.set(url, src);
-        menu.sublabel = sublabel;
+        menuTemplate[SAVEAS].sublabel = sublabel;
         menuIsClosing = true;
         // electron currently doesn't support dynamic menus, we have to re-open it
-        mediaInputMenu.closePopup(win);
-        mediaInputMenu = showMenu();
+        menu.closePopup(win);
+        showMenu(callback);
       } // urlLoaded()
 
-      const observer:any = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+      const observer:MutationObserver = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
       {
         const node = m[0].target as HTMLElement;
         let src:string;
@@ -212,16 +285,26 @@ export const popupContextMenu = async (
       }) //observer
 
       const win = remote.getCurrentWindow();
-      const img = document.elementFromPoint(params.x, params.y) as HTMLImageElement;
-      const overlay = document.querySelector("body > div.cdk-overlay-container") as HTMLElement;
+      let overlay = {} as HTMLElement;
+      
+      for (let i = 0; i < 100; i++)
+      {
+        if (overlay = document.querySelector("body > div.cdk-overlay-container") as HTMLElement)
+          break;
+
+        const button = document.querySelector("mw-main-nav-menu > button") as HTMLElement;
+        button.click();
+        button.click();
+      }
+
       const cachedUrl = cacheURL.get(url);
-      let timer:any,
+      let timer:NodeJS.Timer,
           enabled = true;
 
       if (cachedUrl)
         url = cachedUrl;
 
-      if (img.classList.contains("image-msg") && !cachedUrl && (img.naturalWidth == 600 || img.naturalHeight == 600) )
+      if (node.classList.contains("image-msg") && !cachedUrl && ((node as HTMLImageElement).naturalWidth == 600 || (node as HTMLImageElement).naturalHeight == 600) )
       {
         // menu requested on image preview, let's load the original image
         enabled = false;
@@ -232,85 +315,27 @@ export const popupContextMenu = async (
           childList: true,
         });
         // open original image
-        img?.click();
+        node?.click();
       }
       if (!enabled)
-        menu.sublabel = "loading orig...";
+        menuTemplate[SAVEAS].sublabel = "loading orig...";
 
-      let mediaInputMenu = showMenu();
       break;
     default:
-      if (params.isEditable) {
-        const textMenuTemplateCopy = [...textMenuTemplate];
-        if (params.misspelledWord) {
-          textMenuTemplateCopy.unshift({ type: "separator" });
-          textMenuTemplateCopy.unshift({
-            label: "Add to Dictionary",
-            click: () =>
-              app.mainWindow?.webContents.session.addWordToSpellCheckerDictionary(
-                params.misspelledWord
-              ),
-          });
-          textMenuTemplateCopy.unshift({ type: "separator" });
-          for (const suggestion of params.dictionarySuggestions.reverse()) {
-            textMenuTemplateCopy.unshift({
-              label: suggestion,
-              click: () =>
-                remote.getCurrentWebContents().replaceMisspelling(suggestion),
-            });
-          }
-        }
-        const textInputMenu = Menu.buildFromTemplate(textMenuTemplateCopy);
-        textInputMenu.popup();
-      } else {
-        // Omit options pertaining to input fields if this isn't one
-        let menu:any = [...standardMenuTemplate];
-        const node = document.elementFromPoint(params.x, params.y) as HTMLElement;
-        const msgNode = findMsg(node) as HTMLElement;
-        if (!msgNode)
-          return;
-
-        const sel = document.getSelection() as Selection;
-        let text:string = "";
-        if (sel.containsNode(msgNode, true))
-          text = sel.toString();
-
-        if (text == "")
-        {
-          text = msgNode?.textContent as string;
-          const range = document.createRange();
-          range.selectNode(msgNode);
-          window.getSelection()?.removeAllRanges();
-          window.getSelection()?.addRange(range);
-          text = window.getSelection()?.toString() as string;
-          window.getSelection()?.removeAllRanges();
-        }
-
-        menu[0].click = () =>
-        {
-          if (text != "")
-            clipboard.writeText(text);
-        }
-
-        menu[1].click = () =>
-        {
-          clipboard.writeText(params.linkURL);
-        };
-
-        menu[3].click = () =>
-        {
-          const range = document.createRange();
-          range.selectNode(msgNode);
-          window.getSelection()?.removeAllRanges();
-          window.getSelection()?.addRange(range);
-        }
-        menu[0].enabled = text != ""
-        if (!params.linkURL || node.tagName != "A")
-        {
-          menu.splice(1, 1);
-        }
-        const standardInputMenu = Menu.buildFromTemplate(menu);
-        standardInputMenu.popup();
-      }
+      menuTemplate[SAVEAS].visible = false;
   }
+  showMenu(callback);
 };
+
+const cacheURL:Map<string, string> = new Map();
+const findMsg = function (node:Element|Element|null):HTMLElement|null
+{
+  if (!node)
+    return null;
+
+  if (node.tagName == "MWS-MESSAGE-PART-CONTENT" || node.tagName == "MWS-LIGHTBOX")
+    return node as HTMLElement;
+
+  return findMsg(node.parentNode as Element );
+}
+
