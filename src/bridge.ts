@@ -105,25 +105,30 @@ window.Notification = function (title: string, options: NotificationOptions) {
         body: options.body || "",
       };
 
+  const isSound = settings.get(SETTING_NOTIFICATION_SOUND,true) as boolean;
   notificationOpts.silent = true;
 
   const notification = new ElectronNotification(notificationOpts);
   notification.addListener("click", () => {
     app.mainWindow?.show();
     document.dispatchEvent(new Event("focus"));
+    if (!isSound)
+    {
+      (document.querySelector('a[href$="/' + options.data.id + '"]') as HTMLElement).click();
+    }
   });
-  // Mock the api for adding event listeners for a normal Browser notification
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  notification.addEventListener = notification.addListener;
+  if (isSound)
+  {
+    // Mock the api for adding event listeners for a normal Browser notification
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    notification.addEventListener = notification.addListener;
+  }
   notification.show();
   if (!app.mainWindow?.isFocused()) {
     app.mainWindow?.flashFrame(true);
   }
-  return settings.get(
-    SETTING_NOTIFICATION_SOUND,
-    true
-  ) as boolean && notification;
+  return notification;
 };
 // THIS IS NEEDED FOR GOOGLE TO ISSUE NOTIFICATIONS
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
