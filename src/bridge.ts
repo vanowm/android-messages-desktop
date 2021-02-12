@@ -106,7 +106,7 @@ window.Notification = function (title: string, options: NotificationOptions) {
       };
 
   const isSound = settings.get(SETTING_NOTIFICATION_SOUND,true) as boolean;
-  notificationOpts.silent = true;
+  notificationOpts.silent = true; //disable system's notification sound
 
   const notification = new ElectronNotification(notificationOpts);
   notification.addListener("click", () => {
@@ -114,6 +114,10 @@ window.Notification = function (title: string, options: NotificationOptions) {
     document.dispatchEvent(new Event("focus"));
     if (!isSound)
     {
+      // if notification sound disabled,
+      // we are forcing google code to fail by not providing addEventListener function (or we could simply not return notification all together)
+      // therefore we must handle click on notification ourselves:
+      // search conversation by ID and activate it.
       (document.querySelector('a[href$="/' + options.data.id + '"]') as HTMLElement).click();
     }
   });
