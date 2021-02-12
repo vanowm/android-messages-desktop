@@ -10,6 +10,9 @@ import {
   SETTING_TRAY_ENABLED,
 } from "./constants";
 
+const { name } = require('../../package.json');
+const uuid = require('uuid');
+
 export class TrayManager {
   public enabled = settings.get(SETTING_TRAY_ENABLED, !IS_LINUX) as boolean;
   public iconPath = this.getIconPath();
@@ -45,7 +48,7 @@ export class TrayManager {
 
   public startIfEnabled(): void {
     if (this.enabled) {
-      this.tray = new Tray(this.iconPath, this.stringToGUID(this.iconPath));
+      this.tray = new Tray(this.iconPath, uuid.v5(name + app.getAppPath(), "127d083c-9721-323f-9403-a0b520fbc475"));
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
@@ -132,32 +135,6 @@ export class TrayManager {
         app.exit(0);
       }
     }
-  }
-
-// generate GUID from a string
-// https://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid/66085896#66085896
-  private stringToGUID (str:string):string
-  {
-    let seed = 0;
-    // generate a seed from our string
-    for (let i = 0; i < str.length; i++)
-      seed = (seed + (str.charCodeAt(i) * (i + 1) - 1)) & 0xfffffffffffff;
-
-    str = seed.toString(16) + str;
-    seed = str.length;
-    return 'xxxxxxxx-xxxx-mxxx-nxxx-xxxxxxxxxxxx'.replace(/[xmn]/g, function (char, index, num) //
-    {
-      //convert a letter from string into integer
-      num = seed = (str[(index ** index + seed  + 1) % str.length]).charCodeAt(0) + seed  + index;
-      if (char == "x")
-        num  %= 16; //make sure it's 0-9A-F
-      else if (char == "m")
-        num = (num % 4) + 1; //limit to 1-5
-      else
-        num = (num % 4) + 8; //limit to 8,9,a,b
-
-      return num.toString(16); //convert into HEX
-    });
   }
 
   public setUnreadIcon(toggle: boolean): void {
