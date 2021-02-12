@@ -50,10 +50,6 @@ window.addEventListener("load", () => {
       createUnreadListener();
       observer.disconnect();
     }
-    //force insert div.cdk-overlay-container into DOM
-    const menu = document.querySelector("mw-main-nav-menu > button") as HTMLElement;
-    menu.click();
-    menu.click();
     // In the future we could detect the "you've been signed in elsewhere" modal and notify the user here
   };
 
