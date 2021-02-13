@@ -396,15 +396,15 @@ export class UnreadManager {
                  /*bold*/        [120211 /*A-Z*/, 120205 /*a-z*/, 120764 /*0-9*/],
                  /*bold-italic*/ [120315 /*A-Z*/, 120309 /*a-z*/, 120764 /*0-9 (no italic available)*/]
               ];
-  private defaultHighlight = (text:string|number, t?:any):string =>
+  private defaultHighlight = (text:string|number, t?:number|Array<number>):string =>
   {
-      t = this.type[t] || t && t.length == 3 ? t : this.type[0];
-    return (text + "").replace(/[a-zA-Z0-9]/g, (a) => String.fromCodePoint((a.codePointAt(0) || 0) + t[/[0-9]/.test(a) ? 2 : /[a-z]/.test(a) ? 1 : 0]));
+    let offset:Array<number> = this.type[t as number] || t && (t as Array<number>).length == 3 ? t as Array<number> : this.type[0];
+    return (text + "").replace(/[a-zA-Z0-9]/g, (a) => String.fromCodePoint((a.codePointAt(0) || 0) + offset[/[0-9]/.test(a) ? 2 : /[a-z]/.test(a) ? 1 : 0]));
   }
 
   public getMenu(id:string):MenuItemConstructorOptions
   {
-    const submenu:any = [];
+    const submenu:Array<Object> = [];
     switch (id)
     {
       case "iconBadgePosition":

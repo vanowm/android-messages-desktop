@@ -13,7 +13,6 @@ import { popupContextMenu } from "./menu/contextMenu";
 import settings from "electron-settings";
 import { getProfileImg } from "./helpers/profileImage";
 
-
 const { Notification: ElectronNotification, app } = remote;
 
 import {unreadManager} from "./helpers/unreadManager";
@@ -72,8 +71,10 @@ window.addEventListener("load", () => {
     childList: true,
     attributes: true,
   });
-});
 
+  // a work around issue #229 (https://github.com/OrangeDrangon/android-messages-desktop/issues/229)
+  if (!settings.get("startInTray")) app.mainWindow?.show();
+});
 ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
   for(let s in settingsList)
   {
@@ -159,3 +160,4 @@ window.Notification = function (title: string, options: NotificationOptions) {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 Notification.permission = "granted";
+Notification.requestPermission = async () => "granted";
