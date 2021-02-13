@@ -13,6 +13,7 @@ import { popupContextMenu } from "./menu/contextMenu";
 import settings from "electron-settings";
 import { getProfileImg } from "./helpers/profileImage";
 
+
 const { Notification: ElectronNotification, app } = remote;
 
 import {unreadManager} from "./helpers/unreadManager";
@@ -160,4 +161,3 @@ window.Notification = function (title: string, options: NotificationOptions) {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 Notification.permission = "granted";
-Notification.requestPermission = async () => "granted";
