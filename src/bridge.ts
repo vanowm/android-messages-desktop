@@ -63,59 +63,89 @@ window.addEventListener("load", () => {
 });
 
 // dark mode work around issue #258 (https://github.com/OrangeDrangon/android-messages-desktop/issues/258)
-window.addEventListener("DOMContentLoaded", function(e)
-{
-  const fs = require("fs");
-  fs.readFile(path.resolve(BASE_APP_PATH, "src", "stylesheets", "dark.css"), "utf-8", function(error:any, data:any)
-  {
-    if(error)
-      return;
-
-    const style = document.createElement("style");
-    style.innerHTML = data;
-    style.id = "dark-theme";
-    let s = document.head.querySelector("style");
-    s?.parentNode?.insertBefore(style, s); //insert as first style, allowing native style overwrite it.
-  });
-
-  //theme selection is saved in google account and restored on initial load
-  //I don't know if there are any events available that we could use to identify when it finished loading
-  //for now we are relaying on div#cdk-describedby-message-1 that being inserted into DOM after theme is applied by google
-  //at which time we are forcing light/dark theme to match system.
-  const obs = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
-  {
-    for(let i = 0; i < m.length; i++)
-    {
-      for(let n = 0; n < m[i].addedNodes.length; n++)
-      {
-        if ((m[i].addedNodes[n] as HTMLElement).id == "cdk-describedby-message-1") //this is one of the last items inserted 
-        {
-          if (settings.get(SETTING_SYSTEM_DARK_MODE))
-            darkMode(nativeTheme.shouldUseDarkColors);
-
-          o.disconnect();
-        }
-      }
-    }
-  });
-  obs.observe(document.body, {
-    subtree: true,
-    childList: true,
-    attributes: true
-  });
-});
+let isDarkMode!:boolean;
 
 function darkMode(mode:boolean)
 {
-  localStorage.setItem("dark_mode_enabled", "" + mode);
+  localStorage.setItem("dark_mode_enabled", "" + (mode === true));
   if (mode)
     document.body?.classList.add("dark-theme");
-  else
-    document.body?.classList.remove("dark-theme");
+  else if (!isDarkMode)
+      document.body?.classList.remove("dark-theme");
 }
+// force google insert dark-theme
+// unfortunate side effect is the splash screen will always be dark
+darkMode(true);
+
+window.addEventListener("DOMContentLoaded", function(e)
+{
+  const darkStyle = document.createElement("style") as HTMLElement;
+  darkStyle.id = "dark-theme";
+  document.head.prepend(darkStyle);
+
+  // theme setting is stored in google account and restored on initial load
+  // dark theme style inserted/remeoved according to that setting
+  // capture the style and copy to ours that will remain when google removes theirs
+  new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+  {
+    for(let i = 0; i < m.length; i++)
+    {
+      for(let n = 0, style; n < m[i].addedNodes.length; n++)
+      {
+        style = m[i].addedNodes[n] as HTMLStyleElement;
+        if (style.textContent?.substr(0, 15) == "body.dark-theme")
+        {
+          isDarkMode = true;
+          darkStyle.innerHTML = style.innerHTML;
+        }
+      }
+      for(let n = 0, style; n < m[i].removedNodes.length; n++)
+      {
+        style = m[i].removedNodes[n] as HTMLStyleElement;
+        if (style.textContent?.substr(0, 15) == "body.dark-theme")
+        {
+          isDarkMode = false;
+          // allow google complete switching theme
+          setTimeout(()=>
+          {
+            if (settings.get(SETTING_SYSTEM_DARK_MODE))
+              darkMode(nativeTheme.shouldUseDarkColors)
+          }, 0);
+        }
+      }
+    }
+  }).observe(document.head, {
+    childList: true
+  });
+
+  const systemDarkDisable = ()=>
+  {
+    settings.set(SETTING_SYSTEM_DARK_MODE, false);
+  }
+
+  // add click listeners to the enable/disable dark theme buttons in 3dot menu
+  new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+  {
+    for(let i = 0; i < m.length; i++)
+    {
+      for(let n = 0, node; n < m[i].addedNodes.length; n++)
+      {
+        node = m[i].addedNodes[n] as HTMLElement;
+        if (node?.id == "mat-menu-panel-0")
+        {
+          node.querySelector('[data-e2e-main-nav-menu="ENABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
+          node.querySelector('[data-e2e-main-nav-menu="DISABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
+        }
+      }
+    }
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+});// DOMContentLoaded
 
 ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
-  if ("useDarkMode" in settingsList && settingsList.useDarkMode !== null) {
+  if ("useDarkMode" in settingsList) {
     darkMode(settingsList.useDarkMode);
   }
 

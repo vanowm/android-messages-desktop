@@ -147,6 +147,15 @@ if (!isFirstInstance) {
         settingsManager.hideNotificationContent;
       (useSystemDarkModeMenuItem as Electron.MenuItem).checked =
         settingsManager.systemDarkMode;
+
+      settingsManager.addWatcher(
+        SETTING_SYSTEM_DARK_MODE,
+        (newValue:boolean) =>
+        {
+          (useSystemDarkModeMenuItem as Electron.MenuItem).checked = newValue;
+        }
+      );
+
     }
 
     autoUpdater.checkForUpdatesAndNotify();
