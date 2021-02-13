@@ -57,7 +57,7 @@ export class UnreadManager {
 	  return this.isParent(node.parentNode, filter);
 	}
 
-  public document:any;
+  private document:any;
   private get window()
   {
     return this.document?.defaultView;
@@ -74,7 +74,8 @@ export class UnreadManager {
 		return this.document?.body?.getAttribute("focus") == "true" && app.mainWindow?.isFocused() as boolean;
 	}
 
-	public generateIcon(opt:any, callback:Function): void
+  // main function to generate icon with a badge
+	private generateIcon(opt:any, callback:Function): void
 	{
 	  const canvIcon = document.createElement("canvas"),
 	        ctxIcon:any = canvIcon.getContext("2d"),
@@ -239,6 +240,7 @@ export class UnreadManager {
 		return (mutationList?: MutationRecord[], observer?: MutationObserver) => this._observer(mutationList, observer);
 	}
 
+  // observer for read/unread status of conversations
 	private _observer (_mutationList?: MutationRecord[], _observer?: MutationObserver)
 	{
     if (_mutationList)
@@ -272,8 +274,11 @@ export class UnreadManager {
       return;
     }
     const changeIcon = document.body.hasAttribute("changeicon");
+
+    // conversations are not available when settings page is opened
     if (!changeIcon && document.querySelector("mw-settings-container"))
       return;
+
     clearTimeout(this.timer);
     let unread:any = {icon:"",list:[]};
 
@@ -285,17 +290,17 @@ export class UnreadManager {
     }
     else
     {
-      let isNew:boolean = false;
+      let isNew = false;
       // collect some info about new messages, this could be used to display custom formatted tooltip
-      for(let i = 0, node, data:any, name, avatar:HTMLCanvasElement|null, text, nodes = document.querySelectorAll("[data-e2e-is-unread=true]"); i < nodes.length; i++)
+      for(let i = 0, node, data:any, name, avatar, text, nodes = document.querySelectorAll("[data-e2e-is-unread=true]"); i < nodes.length; i++)
       {
         node = nodes[i];
         unread.list[unread.list.length] = data = {};
         if (name = node.querySelector("[data-e2e-conversation-name]"))
           data.name = name.textContent;
 
-        // not using cache, because this might fire very early at startup when avatar is not loaded yet which might cache a placeholder instead.
-        if (avatar = node.querySelector("canvas.canvas-avatar"))
+        // can't use cache, because this might fire very early at startup when avatar is not loaded yet, which might cache a placeholder instead.
+        if (avatar = node.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
           data.avatar = avatar.toDataURL();
 
         if (text = node.querySelector("div.snippet-text.ng-star-inserted"))
@@ -337,12 +342,12 @@ export class UnreadManager {
     for (let i in iconSizes)
     {
       // load cached icons
-      unread["icon" + i] = this.unreadIconImage(unreadID + "_" + i);
+      unread["icon" + i] = this.cacheIconImage(unreadID + "_" + i);
     }
 		unread.focus = this.isFocused();
     if (unread.icon)
     {
-      // re-use cached icons
+      // change tray icon from cache
       this.setUnreadIcon(unread);
     }
     else
@@ -357,7 +362,7 @@ export class UnreadManager {
         for(let i in iconSizes)
         {
           unread["icon" + i] = iconSizes[i].icon;
-          this.unreadIconImage(unreadID + "_" + i, iconSizes[i].icon); // cache new icon
+          this.cacheIconImage(unreadID + "_" + i, iconSizes[i].icon); // cache new icon
         }
         this.setUnreadIcon(unread); // change tray icon
       };
@@ -379,7 +384,7 @@ export class UnreadManager {
     return path.resolve(RESOURCES_PATH, "icons", size + "x" + size + ".png");
   }
 
-  private unreadIconImage(text:string, icon?:NativeImage): NativeImage | undefined
+  private cacheIconImage(text:string, icon?:NativeImage): NativeImage | undefined
   {
     const iconCacheName = this.iconCacheName + text;
     if (icon !== undefined)
@@ -392,19 +397,24 @@ export class UnreadManager {
   }
 
   // since Electron doesn't provide any means highlight default menu item, we can use UNICODE bold/italic characters instead
+  // the numbers represent offset added to the charcode of a letter
+  // i.e letter "W" charcode 87 + offset 120211 = charcode 120298 (bold "𝗪")
   private type = [
                  /*bold*/        [120211 /*A-Z*/, 120205 /*a-z*/, 120764 /*0-9*/],
                  /*bold-italic*/ [120315 /*A-Z*/, 120309 /*a-z*/, 120764 /*0-9 (no italic available)*/]
               ];
-  private defaultHighlight = (text:string|number, t?:number|Array<number>):string =>
+
+  private defaultHighlight = (text:string, t = 0):string =>
   {
-    let offset:Array<number> = this.type[t as number] || t && (t as Array<number>).length == 3 ? t as Array<number> : this.type[0];
+    let offset = this.type[t as number] || this.type[0];
     return (text + "").replace(/[a-zA-Z0-9]/g, (a) => String.fromCodePoint((a.codePointAt(0) || 0) + offset[/[0-9]/.test(a) ? 2 : /[a-z]/.test(a) ? 1 : 0]));
   }
 
   public getMenu(id:string):MenuItemConstructorOptions
   {
-    const submenu:Array<Object> = [];
+    const submenu:Array<Object> = [],
+          click = (item:any) => settings.set(id, item.value);
+
     switch (id)
     {
       case "iconBadgePosition":
@@ -415,9 +425,7 @@ export class UnreadManager {
             label: i == DEFAULT_BADGE_POSITION ? this.defaultHighlight(l[i]) : l[i],
             value: i,
             type: "radio",
-            click: (item:any) => {
-              settings.set(id, item.value);
-            },
+            click: click,
           };
         }
         return {
@@ -435,9 +443,7 @@ export class UnreadManager {
             label: i == DEFAULT_BADGE_SCALE ? this.defaultHighlight(n) : n,
             value: i,
             type: "radio",
-            click: (item:any) => {
-              settings.set(id, item.value);
-            },
+            click: click,
           };
         }
         return {
@@ -452,9 +458,7 @@ export class UnreadManager {
           id: id,
           label: "Unread icon badge on taskbar",
           type: "checkbox",
-          click: (item:any) => {
-            settings.set(id, item.checked);
-          },
+          click: click,
         }
     }
   }
@@ -464,7 +468,7 @@ export class UnreadManager {
     const tray:any = app.trayManager;
     if (IS_WINDOWS)
     {
-      let changeIcon = function()
+      const changeIcon = ()=>
       {
         app.mainWindow?.setIcon(
           (settings.get("iconBadgeTaskbar", DEFAULT_BADGE_TASKBAR)
@@ -482,6 +486,8 @@ export class UnreadManager {
       if (!unread.focus && !unread.changeIcon)
       {
 //	    	app.mainWindow?.flashFrame(true);
+        // work around for "mainWindow.setIcon() does not change taskbar icon if window is in "attention" state"
+        // https://github.com/electron/electron/issues/27321
         clearTimeout(this.timer);
         this.timer = setTimeout(function()
         {
@@ -496,10 +502,9 @@ export class UnreadManager {
       return;
 
     this.unreadPrev = unread;
-    const tooltip: string = "Android Messages v" + app.getVersion(),
-          textMaxLength = 22; // trancate text
+    let tooltip: string = "Android Messages v" + app.getVersion();
+    const textMaxLength = 22; // trancate text
 
-    tray.tray.setToolTip(tooltip);
     if (unread.list.length) {
       tray.tray.setImage(unread.icon
                           || unread.icon16
@@ -522,10 +527,12 @@ export class UnreadManager {
         data += (data ? "\n" : "") + info.name + text;
       }
       if (data)
-        tray.tray.setToolTip(tooltip + "\n\n" + data);
+        tooltip += "\n\n" + data;
+
     } else {
       tray.tray.setImage(tray.iconPath);
     }
+    tray.tray.setToolTip(tooltip);
   }
 }
 const doc = typeof(document) != "undefined" ? document : undefined,

@@ -31,11 +31,11 @@ export class SettingsManager {
     SETTING_SYSTEM_DARK_MODE,
     true
   ) as boolean;
-  public iconBadgeScale = settings.get(
+  public iconBadgePosition = settings.get(
   	SETTING_BADGE_POSITION,
   	DEFAULT_BADGE_POSITION
   ) as number;
-  public iconBadgePosition = settings.get(
+  public iconBadgeScale = settings.get(
   	SETTING_BADGE_SCALE,
   	DEFAULT_BADGE_SCALE
   ) as number;
