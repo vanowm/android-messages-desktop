@@ -11,6 +11,9 @@ import {
   IS_LINUX,
   IS_MAC, IS_WINDOWS,
   SETTING_TRAY_ENABLED,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
 } from "../helpers/constants";
 import { separator } from "./items/separator";
 
@@ -116,11 +119,11 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
   );
 /* unread badge */
   settingsMenu.submenu.push(separator)
-  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgePosition"))
-  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeScale"));
+  settingsMenu.submenu.push(unreadManager.getMenu(SETTING_BADGE_POSITION))
+  settingsMenu.submenu.push(unreadManager.getMenu(SETTING_BADGE_SCALE));
   if (IS_WINDOWS)
   {
-    settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeTaskbar"));
+    settingsMenu.submenu.push(unreadManager.getMenu(SETTING_BADGE_TASKBAR));
   }
 
 }

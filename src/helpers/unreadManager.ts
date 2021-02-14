@@ -6,6 +6,9 @@ import {
   IS_WINDOWS,
   IS_LINUX,
   IS_MAC,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
   DEFAULT_BADGE_POSITION,
   DEFAULT_BADGE_SCALE,
   DEFAULT_BADGE_TASKBAR
@@ -85,8 +88,8 @@ export class UnreadManager {
 	        text = opt.text || "",
 	        iconSize = opt.iconSize || 32,
 	        textSize = opt.textSize || iconSize,
-	        textScale = opt.textScale !== undefined ? opt.textScale                   : settings.get("iconBadgeScale", DEFAULT_BADGE_SCALE) as number,
-	        textPosition = opt.textPosition !== undefined ? opt.textPosition          : settings.get("iconBadgePosition", DEFAULT_BADGE_POSITION) as number,
+	        textScale = opt.textScale !== undefined ? opt.textScale                   : settings.get(SETTING_BADGE_SCALE, DEFAULT_BADGE_SCALE) as number,
+	        textPosition = opt.textPosition !== undefined ? opt.textPosition          : settings.get(SETTING_BADGE_POSITION, DEFAULT_BADGE_POSITION) as number,
 	        textColor = opt.textColor !== undefined ? opt.textColor                   : "white",
 	        outlineOut = opt.outlineOut !== undefined ? opt.outlineOut                : Math.round(iconSize/5.333 + (textScale < 1 ? -(textScale * 2) : textScale)),
 	        outlineOutColor = opt.outlineOutColor !== undefined ? opt.outlineOutColor : "red",
@@ -320,8 +323,8 @@ export class UnreadManager {
 
     const text = unread.list.length,
           // badge position: 0=top-left; 1=top-right; 2=bottom-right; 3=bottom-left; 4=center
-          textPosition:number = settings.get("iconBadgePosition", DEFAULT_BADGE_POSITION) as number,
-          textScale = settings.get("iconBadgeScale", DEFAULT_BADGE_SCALE) as number, // badge scale: 0.5 - 1.5
+          textPosition:number = settings.get(SETTING_BADGE_POSITION, DEFAULT_BADGE_POSITION) as number,
+          textScale = settings.get(SETTING_BADGE_SCALE, DEFAULT_BADGE_SCALE) as number, // badge scale: 0.5 - 1.5
           iconSizes:any = {
             "":   {outlineOut: 7, outlineIn: 4}, //32x32 icon to use as 16x16 (tray)
 //    				"16":	{textScale: (textScale + textScale / 10), outlineOut: 4, outlineIn: 3}, //16x16 //doesn't look good
@@ -413,11 +416,11 @@ export class UnreadManager {
   public getMenu(id:string):MenuItemConstructorOptions
   {
     const submenu:Array<Object> = [],
-          click = (item:any) => settings.set(id, item.value);
+          click = (item:any) => settings.set(id, item.type == "checkbox" ? item.checked : item.value);
 
     switch (id)
     {
-      case "iconBadgePosition":
+      case SETTING_BADGE_POSITION:
         for(let i = 0, l = ["Top Left", "Top Right", "Bottom Right", "Bottom Left", "Center"]; i < l.length; i++)
         {
           submenu[submenu.length] = {
@@ -434,7 +437,7 @@ export class UnreadManager {
           submenu: submenu
         }
 
-      case "iconBadgeScale":
+      case SETTING_BADGE_SCALE:
         for(let i = 0.25, n; i <= 2; i += 0.25)
         {
           n = i * 100 + "%";
@@ -452,7 +455,7 @@ export class UnreadManager {
           submenu: submenu
         };
 
-      case "iconBadgeTaskbar":
+      case SETTING_BADGE_TASKBAR:
       default:
         return {
           id: id,
@@ -471,7 +474,7 @@ export class UnreadManager {
       const changeIcon = ()=>
       {
         app.mainWindow?.setIcon(
-          (settings.get("iconBadgeTaskbar", DEFAULT_BADGE_TASKBAR)
+          (settings.get(SETTING_BADGE_TASKBAR, DEFAULT_BADGE_TASKBAR)
             ? unread.icon64
               || unread.icon128
               || unread.icon256

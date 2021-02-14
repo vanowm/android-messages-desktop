@@ -10,6 +10,9 @@ import {
   SETTING_SYSTEM_DARK_MODE,
   BASE_APP_PATH,
   IS_WINDOWS,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
@@ -158,6 +161,9 @@ window.addEventListener("DOMContentLoaded", function(e)
           node.querySelector('[data-e2e-main-nav-menu="DISABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
         }
       }
+      case SETTING_BADGE_POSITION:
+      case SETTING_BADGE_SCALE:
+      case SETTING_BADGE_TASKBAR:
     }
   }).observe(document.body, {
     childList: true,
