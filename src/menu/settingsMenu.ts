@@ -89,16 +89,6 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
         settings.set("notificationSoundEnabledPref", item.checked);
       },
     },
-    separator,
-    {
-      id: "pressEnterToSendMenuItem",
-      label: "Press Enter to Send Message",
-      type: "checkbox",
-      click: (item) => {
-        settings.set("pressEnterToSendPref", item.checked);
-      },
-    },
-    separator,
     {
       id: "hideNotificationContentMenuItem",
       label: "Hide Notification Content",
@@ -107,7 +97,14 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
         settings.set("hideNotificationContentPref", item.checked);
       },
     },
-    separator,
+    {
+      id: "pressEnterToSendMenuItem",
+      label: "Press Enter to Send Message",
+      type: "checkbox",
+      click: (item) => {
+        settings.set("pressEnterToSendPref", item.checked);
+      },
+    },
     {
       id: "useSystemDarkModeMenuItem",
       label: "Use System Dark Mode Setting",
@@ -118,6 +115,7 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
     }
   );
 /* unread badge */
+  settingsMenu.submenu.push(separator)
   settingsMenu.submenu.push(unreadManager.getMenu("iconBadgePosition"))
   settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeScale"));
   if (IS_WINDOWS)
