@@ -7,6 +7,9 @@ import {
   RESOURCES_PATH,
   SETTING_NOTIFICATION_SOUND,
   IS_WINDOWS,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
@@ -96,9 +99,9 @@ ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
         handleEnterPrefToggle(settingsList.enterToSend);
         break;
       case "trayEnabledPref":
-      case "iconBadgePosition":
-      case "iconBadgeScale":
-      case "iconBadgeTaskbar":
+      case SETTING_BADGE_POSITION:
+      case SETTING_BADGE_SCALE:
+      case SETTING_BADGE_TASKBAR:
         document.body.setAttribute("changeicon", "");
         break;
     }

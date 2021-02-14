@@ -18,6 +18,10 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
+  SETTING_SYSTEM_DARK_MODE,
+  SETTING_BADGE_POSITION,
+  SETTING_BADGE_SCALE,
+  SETTING_BADGE_TASKBAR,
 } from "./helpers/constants";
 import { SettingsManager } from "./helpers/settingsManager";
 import { TrayManager } from "./helpers/trayManager";
@@ -143,15 +147,15 @@ if (!isFirstInstance) {
       (useSystemDarkModeMenuItem as Electron.MenuItem).checked =
         settingsManager.systemDarkMode;
 
-      (menuInstance.getMenuItemById("iconBadgePosition"+settingsManager.iconBadgePosition) as Electron.MenuItem).checked = true;
-      (menuInstance.getMenuItemById("iconBadgeScale"+settingsManager.iconBadgeScale) as Electron.MenuItem).checked = true;
+      (menuInstance.getMenuItemById(SETTING_BADGE_POSITION + settingsManager.iconBadgePosition) as Electron.MenuItem).checked = true;
+      (menuInstance.getMenuItemById(SETTING_BADGE_SCALE + settingsManager.iconBadgeScale) as Electron.MenuItem).checked = true;
       if (IS_WINDOWS)
       {
-        (menuInstance.getMenuItemById("iconBadgeTaskbar") as Electron.MenuItem).checked = settingsManager.iconBadgeTaskbar;
+        (menuInstance.getMenuItemById(SETTING_BADGE_TASKBAR) as Electron.MenuItem).checked = settingsManager.iconBadgeTaskbar;
       }
 
     }
-    const settingsWatcherList = ["iconBadgePosition", "iconBadgeScale", "iconBadgeTaskbar"];
+    const settingsWatcherList = [SETTING_BADGE_POSITION, SETTING_BADGE_SCALE, SETTING_BADGE_TASKBAR];
     for(let i = 0; i < settingsWatcherList.length; i++)
     {
       let name = settingsWatcherList[i];
