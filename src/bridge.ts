@@ -7,13 +7,15 @@ import {
   RESOURCES_PATH,
   SETTING_NOTIFICATION_SOUND,
   SETTING_START_IN_TRAY,
+  SETTING_SYSTEM_DARK_MODE,
+  BASE_APP_PATH,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
 import settings from "electron-settings";
 import { getProfileImg } from "./helpers/profileImage";
 
-const { Notification: ElectronNotification, app } = remote;
+const { Notification: ElectronNotification, app, nativeTheme } = remote;
 
 // Electron (or the build of Chromium it uses?) does not seem to have any default right-click menu, this adds our own.
 remote.getCurrentWebContents().addListener("context-menu", popupContextMenu);
@@ -64,16 +66,93 @@ window.addEventListener("load", () => {
   if (!settings.get(SETTING_START_IN_TRAY)) app.mainWindow?.show();
 });
 
-ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
-  if ("useDarkMode" in settingsList && settingsList.useDarkMode !== null) {
-    if (settingsList.useDarkMode) {
-      // Props to Google for making the web app use dark mode entirely based on this class
-      // and for making the class name semantic!
-      document.body.classList.add("dark-mode");
-    } else {
-      document.body.classList.remove("dark-mode");
+// dark mode work around issue #258 (https://github.com/OrangeDrangon/android-messages-desktop/issues/258)
+let isDarkMode!:boolean;
+
+function darkMode(mode:boolean)
+{
+  localStorage.setItem("dark_mode_enabled", "" + (mode === true));
+  if (mode)
+    document.body?.classList.add("dark-theme");
+  else if (!isDarkMode)
+      document.body?.classList.remove("dark-theme");
+}
+// force google insert dark-theme
+// unfortunate side effect is the splash screen will always be dark
+darkMode(true);
+
+window.addEventListener("DOMContentLoaded", function(e)
+{
+  const darkStyle = document.createElement("style") as HTMLElement;
+  darkStyle.id = "dark-theme";
+  document.head.prepend(darkStyle);
+
+  // theme setting is stored in google account and restored on initial load
+  // dark theme style inserted/remeoved according to that setting
+  // capture the style and copy to ours that will remain when google removes theirs
+  new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+  {
+    for(let i = 0; i < m.length; i++)
+    {
+      for(let n = 0, style; n < m[i].addedNodes.length; n++)
+      {
+        style = m[i].addedNodes[n] as HTMLStyleElement;
+        if (style.textContent?.substr(0, 15) == "body.dark-theme")
+        {
+          isDarkMode = true;
+          darkStyle.innerHTML = style.innerHTML;
+        }
+      }
+      for(let n = 0, style; n < m[i].removedNodes.length; n++)
+      {
+        style = m[i].removedNodes[n] as HTMLStyleElement;
+        if (style.textContent?.substr(0, 15) == "body.dark-theme")
+        {
+          isDarkMode = false;
+          // allow google complete switching theme
+          setTimeout(()=>
+          {
+            if (settings.get(SETTING_SYSTEM_DARK_MODE))
+              darkMode(nativeTheme.shouldUseDarkColors)
+          }, 0);
+        }
+      }
     }
+  }).observe(document.head, {
+    childList: true
+  });
+
+  const systemDarkDisable = ()=>
+  {
+    settings.set(SETTING_SYSTEM_DARK_MODE, false);
   }
+
+  // add click listeners to the enable/disable dark theme buttons in 3dot menu
+  new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+  {
+    for(let i = 0; i < m.length; i++)
+    {
+      for(let n = 0, node; n < m[i].addedNodes.length; n++)
+      {
+        node = m[i].addedNodes[n] as HTMLElement;
+        if (node?.id == "mat-menu-panel-0")
+        {
+          node.querySelector('[data-e2e-main-nav-menu="ENABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
+          node.querySelector('[data-e2e-main-nav-menu="DISABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
+        }
+      }
+    }
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+});// DOMContentLoaded
+
+ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
+  if ("useDarkMode" in settingsList) {
+    darkMode(settingsList.useDarkMode);
+  }
+
   if ("enterToSend" in settingsList) {
     handleEnterPrefToggle(settingsList.enterToSend);
   }

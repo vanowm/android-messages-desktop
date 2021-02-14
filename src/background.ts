@@ -18,6 +18,7 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
+  SETTING_SYSTEM_DARK_MODE,
 } from "./helpers/constants";
 import { SettingsManager } from "./helpers/settingsManager";
 import { TrayManager } from "./helpers/trayManager";
@@ -103,6 +104,10 @@ if (!isFirstInstance) {
         });
       }
     });
+    settingsManager.addWatcher(
+      SETTING_SYSTEM_DARK_MODE,
+      (newValue:boolean) => mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, {useDarkMode: newValue ? nativeTheme.shouldUseDarkColors : null})
+    );
 
     if (menuInstance != null) {
       const trayMenuItem = menuInstance.getMenuItemById("startInTrayMenuItem");
@@ -142,6 +147,15 @@ if (!isFirstInstance) {
         settingsManager.hideNotificationContent;
       (useSystemDarkModeMenuItem as Electron.MenuItem).checked =
         settingsManager.systemDarkMode;
+
+      settingsManager.addWatcher(
+        SETTING_SYSTEM_DARK_MODE,
+        (newValue:boolean) =>
+        {
+          (useSystemDarkModeMenuItem as Electron.MenuItem).checked = newValue;
+        }
+      );
+
     }
 
     autoUpdater.checkForUpdatesAndNotify();
