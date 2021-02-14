@@ -138,7 +138,6 @@ export const popupContextMenu = async (event: Electron.Event, params: ContextMen
       window: win,
     });
   } // showMenu()
-
   if (params.isEditable) {
     menuItem("UNDO").enabled = params.editFlags.canUndo;
     menuItem("REDO").enabled = params.editFlags.canRedo;
