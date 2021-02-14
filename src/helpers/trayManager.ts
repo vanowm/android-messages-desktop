@@ -8,6 +8,7 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
+  EVENT_UPDATE_USER_SETTING,
 } from "./constants";
 
 const { name } = require('../../package.json');
@@ -52,6 +53,8 @@ export class TrayManager {
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
+      app.mainWindow?.webContents.send(EVENT_UPDATE_USER_SETTING, {trayEnabledPref: this.enabled});
+
     }
   }
 
@@ -137,6 +140,8 @@ export class TrayManager {
     }
   }
 
+// merged into unreadManager
+/*
   public setUnreadIcon(toggle: boolean): void {
     if (this.tray && this.overlayIconPath != null) {
       this.tray.setToolTip("Android Messages");
@@ -147,4 +152,5 @@ export class TrayManager {
       }
     }
   }
+*/
 }

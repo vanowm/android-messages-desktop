@@ -9,6 +9,7 @@ import {
   SETTING_START_IN_TRAY,
   SETTING_SYSTEM_DARK_MODE,
   BASE_APP_PATH,
+  IS_WINDOWS,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
@@ -17,29 +18,26 @@ import { getProfileImg } from "./helpers/profileImage";
 
 const { Notification: ElectronNotification, app, nativeTheme } = remote;
 
+import {unreadManager} from "./helpers/unreadManager";
+
 // Electron (or the build of Chromium it uses?) does not seem to have any default right-click menu, this adds our own.
 remote.getCurrentWebContents().addListener("context-menu", popupContextMenu);
 
 function createUnreadListener() {
-  const unreadObserver = (
-    _mutationList: MutationRecord[],
-    _observer: MutationObserver
-  ) => {
-    if (document.querySelector(".unread") != null) {
-      app.trayManager?.setUnreadIcon(true);
-    } else {
-      app.trayManager?.setUnreadIcon(false);
-    }
-  };
-  const observer = new MutationObserver(unreadObserver);
+  const observer = new MutationObserver(unreadManager.observer);
   const node = document.querySelector("main");
   if (node) {
     observer.observe(node, {
       subtree: true,
+      childList: true, //needed to get notification for already known unread conversation, which just received another new message
       attributes: true,
       attributeFilter: ["data-e2e-is-unread"],
     });
   }
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ["changeicon"] //force change icon by adding "changeicon" attribute to BODY
+  });
 }
 
 window.addEventListener("load", () => {
@@ -47,6 +45,21 @@ window.addEventListener("load", () => {
     _mutationsList: MutationRecord[],
     observer: MutationObserver
   ) => {
+		//work around for bug https://github.com/electron/electron/issues/27321
+		if (IS_WINDOWS)
+		{
+			setTimeout(function()
+			{
+				app.mainWindow?.on("focus", function()
+				{
+					unreadManager.isFocused(true);
+				});
+				app.mainWindow?.on("blur", function()
+				{
+					unreadManager.isFocused(false);
+				});
+			}, 100);
+		}
     if (document.querySelector("mw-main-nav")) {
       // we're definitely logged-in if this is in the DOM
       ipcRenderer.send(EVENT_BRIDGE_INIT);
@@ -207,7 +220,8 @@ window.Notification = function (title: string, options: NotificationOptions) {
   //@ts-ignore
   notification.addEventListener = notification.addListener;
   notification.show();
-  if (!app.mainWindow?.isFocused()) {
+ // if (!app.mainWindow?.isFocused()) { //always returns true on Windows when notification popup shown?
+  if (!unreadManager.isFocused()) {
     app.mainWindow?.flashFrame(true);
   }
   return notification;

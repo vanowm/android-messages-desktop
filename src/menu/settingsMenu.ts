@@ -5,9 +5,16 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
 } from "electron";
+
 import settings from "electron-settings";
-import { IS_LINUX, IS_MAC, SETTING_TRAY_ENABLED } from "../helpers/constants";
+import {
+  IS_LINUX,
+  IS_MAC, IS_WINDOWS,
+  SETTING_TRAY_ENABLED,
+} from "../helpers/constants";
 import { separator } from "./items/separator";
+
+import { unreadManager } from "../helpers/unreadManager";
 
 export const settingsMenu: MenuItemConstructorOptions = {
   label: IS_MAC ? "&Preferences" : "&Settings",
@@ -110,4 +117,12 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
       },
     }
   );
+/* unread badge */
+  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgePosition"))
+  settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeScale"));
+  if (IS_WINDOWS)
+  {
+    settingsMenu.submenu.push(unreadManager.getMenu("iconBadgeTaskbar"));
+  }
+
 }
