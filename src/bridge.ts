@@ -64,6 +64,10 @@ window.addEventListener("load", () => {
 
   // a work around issue #229 (https://github.com/OrangeDrangon/android-messages-desktop/issues/229)
   if (!settings.get(SETTING_START_IN_TRAY)) app.mainWindow?.show();
+  // part of #217 (https://github.com/OrangeDrangon/android-messages-desktop/issues/217)
+  const style = document.createElement("style");
+  style.innerHTML = 'body.hiddenOverlay mws-lightbox, body.hiddenOverlay [class*="cdk-overlay"], body.hiddenOverlay [class*="cdk-overlay"] *{display:none!important;z-index:-999999!important;visibility:hidden!important;position:absolute!important;left:-100%!important;top:-100%!important;width:0!important;height:0!important}';
+  document.head.appendChild(style);
 });
 
 // dark mode work around issue #258 (https://github.com/OrangeDrangon/android-messages-desktop/issues/258)
