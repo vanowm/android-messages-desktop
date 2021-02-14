@@ -70,6 +70,11 @@ const textMenuTemplate: MenuItemConstructorOptions[] =
     id: "PASTE"
   },
   {
+    label: "Delete",
+    role: "delete",
+    id: "DELETE"
+  },
+  {
     type: "separator",
   },
   {
@@ -141,6 +146,8 @@ export const popupContextMenu = async (event: Electron.Event, params: ContextMen
     menuItem("COPY").enabled = params.editFlags.canCopy;
     menuItem("CUT").enabled = params.editFlags.canCut;
     menuItem("PASTE").enabled = params.editFlags.canPaste;
+    menuItem("DELETE").enabled = params.editFlags.canDelete;
+
     if (params.misspelledWord) {
       menuTemplate.unshift({ type: "separator" });
       menuTemplate.unshift({
