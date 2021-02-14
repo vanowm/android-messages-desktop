@@ -205,20 +205,29 @@ window.Notification = function (title: string, options: NotificationOptions) {
         body: options.body || "",
       };
 
-  notificationOpts.silent = settings.get(
-    SETTING_NOTIFICATION_SOUND,
-    true
-  ) as boolean;
+  const isSound = settings.get(SETTING_NOTIFICATION_SOUND,true) as boolean;
+  notificationOpts.silent = true; //disable system's notification sound
 
   const notification = new ElectronNotification(notificationOpts);
   notification.addListener("click", () => {
     app.mainWindow?.show();
     document.dispatchEvent(new Event("focus"));
+    if (!isSound)
+    {
+      // if notification sound disabled,
+      // we are forcing google code to fail by not providing addEventListener function (or we could simply not return notification all together)
+      // therefore we must handle click on notification ourselves:
+      // search conversation by ID and activate it.
+      (document.querySelector('a[href$="/' + options.data.id + '"]') as HTMLElement).click();
+    }
   });
-  // Mock the api for adding event listeners for a normal Browser notification
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  notification.addEventListener = notification.addListener;
+  if (isSound)
+  {
+    // Mock the api for adding event listeners for a normal Browser notification
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    notification.addEventListener = notification.addListener;
+  }
   notification.show();
  // if (!app.mainWindow?.isFocused()) { //always returns true on Windows when notification popup shown?
   if (!unreadManager.isFocused()) {
