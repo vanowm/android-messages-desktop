@@ -10,6 +10,9 @@ import {
   SETTING_TRAY_ENABLED,
 } from "./constants";
 
+const { name } = require('../../package.json');
+const uuid = require('uuid');
+
 export class TrayManager {
   public enabled = settings.get(SETTING_TRAY_ENABLED, !IS_LINUX) as boolean;
   public iconPath = this.getIconPath();
@@ -45,7 +48,7 @@ export class TrayManager {
 
   public startIfEnabled(): void {
     if (this.enabled) {
-      this.tray = new Tray(this.iconPath);
+      this.tray = new Tray(this.iconPath, uuid.v5(name + app.getAppPath(), "127d083c-9721-323f-9403-a0b520fbc475"));
       const trayContextMenu = Menu.buildFromTemplate(trayMenuTemplate);
       this.tray.setContextMenu(trayContextMenu);
       this.setupEventListeners();
