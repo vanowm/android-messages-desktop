@@ -161,9 +161,6 @@ window.addEventListener("DOMContentLoaded", function(e)
           node.querySelector('[data-e2e-main-nav-menu="DISABLE_DARK_MODE"]')?.addEventListener("click", systemDarkDisable);
         }
       }
-      case SETTING_BADGE_POSITION:
-      case SETTING_BADGE_SCALE:
-      case SETTING_BADGE_TASKBAR:
     }
   }).observe(document.body, {
     childList: true,
@@ -172,12 +169,23 @@ window.addEventListener("DOMContentLoaded", function(e)
 });// DOMContentLoaded
 
 ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
-  if ("useDarkMode" in settingsList) {
-    darkMode(settingsList.useDarkMode);
-  }
-
-  if ("enterToSend" in settingsList) {
-    handleEnterPrefToggle(settingsList.enterToSend);
+  for(let s in settingsList)
+  {
+    switch(s)
+    {
+      case "useDarkMode":
+        darkMode(settingsList.useDarkMode);
+        break;
+      case "enterToSend":
+        handleEnterPrefToggle(settingsList.enterToSend);
+        break;
+      case "trayEnabledPref":
+      case SETTING_BADGE_POSITION:
+      case SETTING_BADGE_SCALE:
+      case SETTING_BADGE_TASKBAR:
+        document.body.setAttribute("changeicon", "");
+        break;
+    }
   }
 });
 
