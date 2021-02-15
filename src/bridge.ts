@@ -13,6 +13,10 @@ import {
   SETTING_BADGE_POSITION,
   SETTING_BADGE_SCALE,
   SETTING_BADGE_TASKBAR,
+  EVENT_OPEN_CONVERSATION,
+  SETTING_MENU_CONVERSATIONS,
+  DEFAULT_MENU_CONVERSATIONS,
+  Conversation,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
 import { popupContextMenu } from "./menu/contextMenu";
@@ -43,6 +47,106 @@ function createUnreadListener() {
   });
 }
 
+function createConversationListeners()
+{
+  const node = document.querySelector("mws-conversations-list > nav.conversation-list");
+  if (!node)
+    return;
+
+  let observer:MutationObserver;
+  new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+  {
+    for(let i = 0; i < m.length; i++)
+    {
+      for(let a = 0; a < m[i].addedNodes.length; a++)
+      {
+        const convList = m[i].addedNodes[a] as HTMLElement;
+        if (!convList.classList.contains("conv-container"))
+          continue;
+
+        let lastList:Array<Conversation> = [];
+        const setList = () =>
+        {
+          const list:Array<Conversation> = [];
+          // gather information about conversations
+          // in the future we can use settings to store number of conversations to show
+//          for(let i = 0, conv, data; i < Math.min(settings.get(SETTING_MENU_CONVERSATIONS, DEFAULT_MENU_CONVERSATIONS) as number, convList.children.length); i++)
+          for(let i = 0, conv, data; i < Math.min(DEFAULT_MENU_CONVERSATIONS, convList.children.length); i++)
+          {
+            const info = {} as Conversation;
+            conv = convList.children[i];
+            if (data = conv.querySelector("[data-e2e-conversation-name]"))
+              info.name = data.textContent as string;
+
+            if (data = conv.querySelector("mws-conversation-snippet"))
+              info.text = data.textContent as string;
+
+            if (data = conv.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
+            {
+              const canvas = document.createElement("canvas"),
+                    ctx = canvas.getContext("2d") as CanvasRenderingContext2D,
+                    size = 24;
+              canvas.width = size;
+              canvas.height = size;
+              ctx.drawImage(data, 0, 0, size, size);
+              info.icon = canvas.toDataURL();
+            }
+
+            if (data = conv.querySelector("a[data-e2e-conversation]") as HTMLAnchorElement)
+              info.id = data.getAttribute("href") as string;
+
+            list[list.length] = info;
+          }
+          // compare to previous list
+          let update = false;
+          for(let i = 0, c = Math.max(lastList.length, list.length); i < c; i++)
+          {
+            if (update = !list[i] || !lastList[i])
+              break;
+
+            for(let n in list[i])
+            {
+              if (update = list[i][n] != lastList[i][n])
+              {
+                c = 0;
+                break;
+              }
+            }
+          }
+          if (!update)
+            return;
+
+          lastList = list;
+          app.trayManager?.setConversationList(list);
+        } // setList();
+
+        observer && observer.disconnect();
+        let timer:NodeJS.Timer;
+        observer = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+        {
+          let canvas = false;
+          for(let i = 0; i < m.length; i++)
+          {
+            if (canvas = (m[i].target as HTMLElement).tagName == "CANVAS")
+              break;
+          }
+          if (!canvas)
+            return;
+
+          clearTimeout(timer);
+          timer = setTimeout(setList, 200);
+        });
+        observer.observe(convList,
+        {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["width"]
+        });
+      } // for m[i].addedNodes
+    } // for m
+  }).observe(node, {childList: true});
+} // createConversationListeners()
+
 window.addEventListener("load", () => {
   const onInit = (
     _mutationsList: MutationRecord[],
@@ -67,6 +171,7 @@ window.addEventListener("load", () => {
       // we're definitely logged-in if this is in the DOM
       ipcRenderer.send(EVENT_BRIDGE_INIT);
       createUnreadListener();
+      createConversationListeners();
       observer.disconnect();
     }
     // In the future we could detect the "you've been signed in elsewhere" modal and notify the user here
@@ -187,6 +292,11 @@ ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
         break;
     }
   }
+});
+
+ipcRenderer.on(EVENT_OPEN_CONVERSATION, (_event, id) =>
+{
+  (document.querySelector('mws-conversation-list-item > a[href="' + id + '"]') as HTMLElement).click();
 });
 
 /**

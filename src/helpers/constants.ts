@@ -41,7 +41,18 @@ export const SETTING_BADGE_TASKBAR = "iconBadgeTaskbar";
 export const DEFAULT_BADGE_POSITION = 1;
 export const DEFAULT_BADGE_SCALE = 1;
 export const DEFAULT_BADGE_TASKBAR = true;
+export const SETTING_MENU_CONVERSATIONS = "trayConversationsLimit";
+export const DEFAULT_MENU_CONVERSATIONS = 10; //number of conversations to show in tray menu
 
 // Events
 export const EVENT_BRIDGE_INIT = "messages-bridge-init";
 export const EVENT_UPDATE_USER_SETTING = "messages-update-user-setting";
+export const EVENT_OPEN_CONVERSATION = "messages-open-conversation";
+
+export interface Conversation {
+  name: string;
+  text: string;
+  icon: string;
+  id: string;
+  [key: string]: string;
+}
