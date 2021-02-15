@@ -35,7 +35,18 @@ export const SETTING_HIDE_NOTIFICATION = "hideNotificationContentPref";
 export const SETTING_SYSTEM_DARK_MODE = "useSystemDarkModePref";
 export const SETTING_START_IN_TRAY = "startInTrayPref";
 export const SETTING_AUTOHIDE_MENU = "autoHideMenuPref";
+export const SETTING_MENU_CONVERSATIONS = "trayConversationsLimit";
+export const DEFAULT_MENU_CONVERSATIONS = 10; //number of conversations to show in tray menu
 
 // Events
 export const EVENT_BRIDGE_INIT = "messages-bridge-init";
 export const EVENT_UPDATE_USER_SETTING = "messages-update-user-setting";
+export const EVENT_OPEN_CONVERSATION = "messages-open-conversation";
+
+export interface Conversation {
+  name: string;
+  text: string;
+  icon: string;
+  id: string;
+  [key: string]: string;
+}

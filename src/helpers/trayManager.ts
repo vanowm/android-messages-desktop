@@ -1,4 +1,4 @@
-import { app, Menu, Tray } from "electron";
+import { app, Menu, Tray, MenuItem, nativeImage, MenuItemConstructorOptions} from "electron";
 import settings from "electron-settings";
 import path from "path";
 import { trayMenuTemplate } from "../menu/trayMenu";
@@ -8,6 +8,8 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
+  EVENT_OPEN_CONVERSATION,
+  Conversation
 } from "./constants";
 
 export class TrayManager {
@@ -143,5 +145,32 @@ export class TrayManager {
         this.tray.setImage(this.iconPath);
       }
     }
+  }
+
+  public setConversationList(list:Array<Conversation>):void
+  {
+    if (!this.enabled)
+      return;
+
+    const click = (item:MenuItem) =>
+    {
+      app.mainWindow?.webContents.send(EVENT_OPEN_CONVERSATION, item.id);
+      this.handleTrayClick({} as KeyboardEvent);
+    }
+    let menu = [];
+    for(let i = 0; i < list.length; i++)
+    {
+      menu[menu.length] = {
+        label: list[i].name,
+        sublabel: list[i].text,
+        id: list[i].id,
+        icon: nativeImage.createFromDataURL(list[i].icon),
+        click: click
+      }
+    }
+    menu = [...menu, {type: "separator"}, ...trayMenuTemplate] as MenuItemConstructorOptions[];
+
+    const trayContextMenu = Menu.buildFromTemplate(menu);
+    this.tray?.setContextMenu(trayContextMenu);
   }
 }
