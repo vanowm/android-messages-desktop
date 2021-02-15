@@ -30,6 +30,7 @@ import { baseMenuTemplate } from "./menu/baseMenu";
 import { devMenuTemplate } from "./menu/devMenu";
 import { helpMenuTemplate } from "./menu/helpMenu";
 import settings from "electron-settings";
+import { trayMenuTemplate } from "./menu/trayMenu";
 
 const state = {
   bridgeInitDone: false,
@@ -300,5 +301,19 @@ if (!isFirstInstance) {
       }
     );
 
+    const trayShowHide = (status:boolean) =>
+    {
+      trayMenuTemplate[0].label = (status ? "Hide" : "Show") + " Android Messages";
+      app.trayManager?.setConversationList();
+    }
+    mainWindow.on("show", ()=>
+    {
+      trayShowHide(true);
+    });
+    mainWindow.on("hide", ()=>
+    {
+      trayShowHide(false);
+    });
+    trayShowHide(!settingsManager.startInTray);
   });//onready
 }

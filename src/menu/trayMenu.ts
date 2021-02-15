@@ -23,7 +23,7 @@ export const trayMenuTemplate: MenuItemConstructorOptions[] = [
     type: "separator",
   },
   {
-    label: "Quit Android Messages",
+    label: "Exit",
     click: (): void => {
       app.quit();
     },

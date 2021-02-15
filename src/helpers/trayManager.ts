@@ -156,18 +156,20 @@ export class TrayManager {
   }
 */
 
-  public setConversationList(list:Array<Conversation>):void
+  private prevConversationList!:Array<Conversation>;
+  public setConversationList(list?:Array<Conversation>):void
   {
     if (!this.enabled)
       return;
 
+    list = list && list.length ? list : this.prevConversationList;
     const click = (item:MenuItem) =>
     {
       app.mainWindow?.webContents.send(EVENT_OPEN_CONVERSATION, item.id);
       this.handleTrayClick({} as KeyboardEvent);
     }
     let menu = [];
-    for(let i = 0; i < list.length; i++)
+    for(let i = 0; i < (list && list.length); i++)
     {
       menu[menu.length] = {
         label: list[i].name,
@@ -177,6 +179,9 @@ export class TrayManager {
         click: click
       }
     }
+    if (list && list.length)
+      this.prevConversationList = list;
+
     menu = [...menu, {type: "separator"}, ...trayMenuTemplate] as MenuItemConstructorOptions[];
 
     const trayContextMenu = Menu.buildFromTemplate(menu);
