@@ -71,12 +71,19 @@ function createConversationListeners()
           for(let i = 0, conv, data; i < Math.min(DEFAULT_MENU_CONVERSATIONS, convList.children.length); i++)
           {
             const info = {} as Conversation;
+            let unread = false;
             conv = convList.children[i];
             if (data = conv.querySelector("[data-e2e-conversation-name]"))
               info.name = data.textContent as string;
 
             if (data = conv.querySelector("mws-conversation-snippet"))
               info.text = data.textContent as string;
+
+            if (data = conv.querySelector("a[data-e2e-conversation]") as HTMLAnchorElement)
+            {
+              unread = data.getAttribute("data-e2e-is-unread") == "true";
+              info.id = data.getAttribute("href") as string;
+            }
 
             if (data = conv.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
             {
@@ -86,11 +93,18 @@ function createConversationListeners()
               canvas.width = size;
               canvas.height = size;
               ctx.drawImage(data, 0, 0, size, size);
+              if (unread)
+              {
+                ctx.fillStyle = "red";
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 1;
+                ctx.arc(21, 3, 2.5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+              }
               info.icon = canvas.toDataURL();
             }
 
-            if (data = conv.querySelector("a[data-e2e-conversation]") as HTMLAnchorElement)
-              info.id = data.getAttribute("href") as string;
 
             list[list.length] = info;
           }
