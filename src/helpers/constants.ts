@@ -26,7 +26,7 @@ export const IS_DEV = process.env.NODE_ENV === "development";
 export const BASE_APP_PATH = path.resolve(__dirname, "..");
 export const RESOURCES_PATH = path.resolve(BASE_APP_PATH, "resources");
 
-export const TRAY_CONVERSATIONS_MAX = 10; //number of conversations to show in tray menu
+export const TRAY_CONVERSATIONS_MAX = 20; //number of conversations to show in tray menu
 
 // Settings
 export const SETTING_TRAY_ENABLED = "trayEnabledPref";
@@ -43,10 +43,8 @@ export const SETTING_BADGE_TASKBAR = "iconBadgeTaskbar";
 export const DEFAULT_BADGE_POSITION = 1;
 export const DEFAULT_BADGE_SCALE = 1;
 export const DEFAULT_BADGE_TASKBAR = true;
-export const SETTING_MENU_CONVERSATIONS = "trayConversationsLimit";
-export const DEFAULT_MENU_CONVERSATIONS = 10; //number of conversations to show in tray menu
 export const SETTING_TRAY_CONVERSATIONS = "trayConversationsLimit";
-export const DEFAULT_TRAY_CONVERSATIONS = TRAY_CONVERSATIONS_MAX;
+export const DEFAULT_TRAY_CONVERSATIONS = 10;
 export const SETTING_TRAY_CONVERSATIONS_TEXT = "trayConversationsText";
 export const DEFAULT_TRAY_CONVERSATIONS_TEXT = false;
 export const SETTING_TRAY_CONVERSATIONS_ICON = "trayConversationsIcon";

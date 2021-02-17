@@ -17,6 +17,7 @@ import {
   SETTING_TRAY_CONVERSATIONS,
   SETTING_TRAY_CONVERSATIONS_TEXT,
   SETTING_TRAY_CONVERSATIONS_ICON,
+  TRAY_CONVERSATIONS_MAX,
 } from "../helpers/constants";
 import { separator } from "./items/separator";
 
@@ -138,7 +139,7 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
     settings.set(id, val);
   }
   const submenuNum:Array<Object> = [];
-  for(let i = 0; i < 11; i++)
+  for(let i = 0; i <= TRAY_CONVERSATIONS_MAX; i++)
   {
     submenuNum[submenuNum.length] = {
       id: SETTING_TRAY_CONVERSATIONS + i,
