@@ -42,6 +42,8 @@ export const SETTING_TRAY_CONVERSATIONS_TEXT = "trayConversationsText";
 export const DEFAULT_TRAY_CONVERSATIONS_TEXT = false;
 export const SETTING_TRAY_CONVERSATIONS_ICON = "trayConversationsIcon";
 export const DEFAULT_TRAY_CONVERSATIONS_ICON = 24; //avatar size
+export const SETTING_TRAY_CONVERSATIONS_SORT = "trayConversationsSort";
+export const DEFAULT_TRAY_CONVERSATIONS_SORT = false
 
 // Events
 export const EVENT_BRIDGE_INIT = "messages-bridge-init";

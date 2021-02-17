@@ -10,11 +10,13 @@ import {
   SETTING_TRAY_ENABLED,
   EVENT_OPEN_CONVERSATION,
   SETTING_TRAY_CONVERSATIONS,
-  DEFAULT_TRAY_CONVERSATIONS,
   SETTING_TRAY_CONVERSATIONS_TEXT,
   SETTING_TRAY_CONVERSATIONS_ICON,
+  SETTING_TRAY_CONVERSATIONS_SORT,
+  DEFAULT_TRAY_CONVERSATIONS,
   DEFAULT_TRAY_CONVERSATIONS_TEXT,
   DEFAULT_TRAY_CONVERSATIONS_ICON,
+  DEFAULT_TRAY_CONVERSATIONS_SORT,
   Conversation
 } from "./constants";
 
@@ -188,6 +190,13 @@ export class TrayManager {
         icon: icon || null,
         click: click
       }
+    }
+    if (settings.get(SETTING_TRAY_CONVERSATIONS_SORT, DEFAULT_TRAY_CONVERSATIONS_SORT))
+    {
+      menu.sort((a,b)=>
+      {
+        return a.label.localeCompare(b.label, undefined, {numeric: true, sensitivity: 'base'})
+      })
     }
     // compare to previous list
     const lastMenu = this.prevConversationMenu || [];
