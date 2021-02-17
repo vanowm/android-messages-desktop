@@ -22,6 +22,9 @@ import {
   SETTING_BADGE_POSITION,
   SETTING_BADGE_SCALE,
   SETTING_BADGE_TASKBAR,
+  SETTING_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
 } from "./helpers/constants";
 import { SettingsManager } from "./helpers/settingsManager";
 import { TrayManager } from "./helpers/trayManager";
@@ -161,27 +164,27 @@ if (!isFirstInstance) {
         }
       );
 
-      (menuInstance.getMenuItemById(SETTING_BADGE_POSITION + settingsManager.iconBadgePosition) as Electron.MenuItem).checked = true;
-      (menuInstance.getMenuItemById(SETTING_BADGE_SCALE + settingsManager.iconBadgeScale) as Electron.MenuItem).checked = true;
-      if (IS_WINDOWS)
+      const settingsList = [SETTING_BADGE_POSITION, SETTING_BADGE_SCALE, SETTING_BADGE_TASKBAR, SETTING_TRAY_CONVERSATIONS, SETTING_TRAY_CONVERSATIONS_TEXT, SETTING_TRAY_CONVERSATIONS_ICON];
+      for(let i = 0; i < settingsList.length; i++)
       {
-        (menuInstance.getMenuItemById(SETTING_BADGE_TASKBAR) as Electron.MenuItem).checked = settingsManager.iconBadgeTaskbar;
+        const name = settingsList[i],
+              menuItem = menuInstance.getMenuItemById(name + (typeof settingsManager[name] == "boolean" ? "" : settingsManager[name])) as Electron.MenuItem;
+        if (menuItem)
+        {
+          menuItem.checked = settingsManager[name] as boolean;
+        }
+
+        settingsManager.addWatcher(
+          name,
+          function(newValue:any)
+          {
+            let obj:any = {};
+            obj[name] = newValue;
+            mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, obj);
+          }
+        );
       }
 
-    }
-    const settingsWatcherList = [SETTING_BADGE_POSITION, SETTING_BADGE_SCALE, SETTING_BADGE_TASKBAR];
-    for(let i = 0; i < settingsWatcherList.length; i++)
-    {
-      let name = settingsWatcherList[i];
-      settingsManager.addWatcher(
-        name,
-        function(newValue:any)
-        {
-          let obj:any = {};
-          obj[name] = newValue;
-          mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, obj);
-        }
-      );
     }
 
     autoUpdater.checkForUpdatesAndNotify();

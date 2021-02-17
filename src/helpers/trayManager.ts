@@ -10,6 +10,12 @@ import {
   SETTING_TRAY_ENABLED,
   EVENT_UPDATE_USER_SETTING,
   EVENT_OPEN_CONVERSATION,
+  SETTING_TRAY_CONVERSATIONS,
+  DEFAULT_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
+  DEFAULT_TRAY_CONVERSATIONS_TEXT,
+  DEFAULT_TRAY_CONVERSATIONS_ICON,
   Conversation
 } from "./constants";
 
@@ -157,28 +163,64 @@ export class TrayManager {
 */
 
   private prevConversationList!:Array<Conversation>;
-  public setConversationList(list?:Array<Conversation>):void
+  private prevConversationMenu!:any;
+  private iconCache = new Map();
+  public setConversationList(_list?:Array<Conversation>):void
   {
     if (!this.enabled)
       return;
 
-    list = list && list.length ? list : this.prevConversationList;
+    const list = _list && _list.length ? _list : this.prevConversationList || [];
     const click = (item:MenuItem) =>
     {
       app.mainWindow?.webContents.send(EVENT_OPEN_CONVERSATION, item.id);
       this.handleTrayClick({} as KeyboardEvent);
-    }
-    let menu = [];
-    for(let i = 0; i < (list && list.length); i++)
+    },
+    isText = settings.get(SETTING_TRAY_CONVERSATIONS_TEXT, DEFAULT_TRAY_CONVERSATIONS_TEXT),
+    isIcon = settings.get(SETTING_TRAY_CONVERSATIONS_ICON, DEFAULT_TRAY_CONVERSATIONS_ICON);
+    let menu:Array<any> = [];
+    for(let i = 0; i < (list && Math.min(settings.get(SETTING_TRAY_CONVERSATIONS, DEFAULT_TRAY_CONVERSATIONS) as number, list.length)); i++)
     {
+      let icon = this.iconCache.get(list[i].icon);
+      if (isIcon)
+      {
+        if (!icon)
+        {
+          icon = nativeImage.createFromDataURL(list[i].icon);
+          this.iconCache.set(list[i].icon, icon);
+        }
+      }
       menu[menu.length] = {
         label: list[i].name,
-        sublabel: list[i].text,
+        sublabel: isText ? list[i].text : null,
         id: list[i].id,
-        icon: nativeImage.createFromDataURL(list[i].icon),
+        icon: icon || null,
         click: click
       }
     }
+    // compare to previous list
+    const lastMenu = this.prevConversationMenu || [];
+    let update = false;
+    for(let i = 0, c = Math.max(lastMenu.length, menu.length); i < c; i++)
+    {
+      if (update = !menu[i] || !lastMenu[i] || menu.length != lastMenu.length)
+        break;
+
+      for(let n in menu[i])
+      {
+        if (update = menu[i][n] !== lastMenu[i][n])
+        {
+          c = 0;
+          break;
+        }
+      }
+    }
+    if (!update)
+      return;
+
+    if (_list)
+      this.prevConversationMenu = menu;
+
     if (list && list.length)
       this.prevConversationList = list;
 

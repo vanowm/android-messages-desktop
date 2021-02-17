@@ -14,8 +14,12 @@ import {
   SETTING_BADGE_SCALE,
   SETTING_BADGE_TASKBAR,
   EVENT_OPEN_CONVERSATION,
-  SETTING_MENU_CONVERSATIONS,
-  DEFAULT_MENU_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
+  DEFAULT_TRAY_CONVERSATIONS,
+  DEFAULT_TRAY_CONVERSATIONS_ICON,
+  TRAY_CONVERSATIONS_MAX,
   Conversation,
 } from "./helpers/constants";
 import { handleEnterPrefToggle } from "./helpers/inputManager";
@@ -70,8 +74,8 @@ function createConversationListeners()
           const list:Array<Conversation> = [];
           // gather information about conversations
           // in the future we can use settings to store number of conversations to show
-//          for(let i = 0, conv, data; i < Math.min(settings.get(SETTING_MENU_CONVERSATIONS, DEFAULT_MENU_CONVERSATIONS) as number, convList.children.length); i++)
-          for(let i = 0, conv, data; i < Math.min(DEFAULT_MENU_CONVERSATIONS, convList.children.length); i++)
+//          for(let i = 0, conv, data; i < Math.min(settings.get(SETTING_TRAY_CONVERSATIONS, DEFAULT_TRAY_CONVERSATIONS) as number, convList.children.length); i++)
+          for(let i = 0, conv, data; i < Math.min(TRAY_CONVERSATIONS_MAX, convList.children.length); i++)
           {
             const info = {} as Conversation;
             let unread = false;
@@ -90,46 +94,31 @@ function createConversationListeners()
 
             if (data = conv.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
             {
-              const canvas = document.createElement("canvas"),
-                    ctx = canvas.getContext("2d") as CanvasRenderingContext2D,
-                    size = 24;
-              canvas.width = size;
-              canvas.height = size;
-              ctx.drawImage(data, 0, 0, size, size);
-              if (unread)
+              const size = settings.get(SETTING_TRAY_CONVERSATIONS_ICON, DEFAULT_TRAY_CONVERSATIONS_ICON) as number;
+              if (size)
               {
-                ctx.fillStyle = "red";
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 1;
-                ctx.arc(21, 3, 2.5, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.stroke();
+                const canvas = document.createElement("canvas"),
+                      ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+                canvas.width = size;
+                canvas.height = size;
+                ctx.drawImage(data, 0, 0, size, size);
+                if (unread)
+                {
+                  ctx.fillStyle = "red";
+                  ctx.strokeStyle = "white";
+                  ctx.lineWidth = 1;
+                  ctx.arc(size - 16.6*size/100, 16.6*size/100, 14.933333333333335*size/100, 0, 2 * Math.PI);
+                  ctx.fill();
+                  ctx.stroke();
+                }
+                info.icon = canvas.toDataURL();
               }
-              info.icon = canvas.toDataURL();
             }
 
 
             list[list.length] = info;
           }
-          // compare to previous list
-          let update = false;
-          for(let i = 0, c = Math.max(lastList.length, list.length); i < c; i++)
-          {
-            if (update = !list[i] || !lastList[i])
-              break;
-
-            for(let n in list[i])
-            {
-              if (update = list[i][n] != lastList[i][n])
-              {
-                c = 0;
-                break;
-              }
-            }
-          }
-          if (!update)
-            return;
-
           lastList = list;
           app.trayManager?.setConversationList(list);
         } // setList();
@@ -138,15 +127,23 @@ function createConversationListeners()
         let timer:NodeJS.Timer;
         observer = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
         {
-          let canvas = false;
+          let canvas:HTMLElement|boolean = false;
           for(let i = 0; i < m.length; i++)
           {
-            if (canvas = (m[i].target as HTMLElement).tagName == "CANVAS")
+            if ((canvas = m[i].target as HTMLElement).tagName == "CANVAS")
+            {
+              if (m[i].attributeName == "refresh" && canvas.getAttribute("refresh") == null)
+                return;
+
               break;
+            }
+
+            canvas = false;
           }
           if (!canvas)
             return;
 
+          canvas.removeAttribute("refresh");
           clearTimeout(timer);
           timer = setTimeout(setList, 200);
         });
@@ -154,7 +151,7 @@ function createConversationListeners()
         {
           subtree: true,
           attributes: true,
-          attributeFilter: ["width"]
+          attributeFilter: ["width","refresh"]
         });
       } // for m[i].addedNodes
     } // for m
@@ -295,15 +292,26 @@ ipcRenderer.on(EVENT_UPDATE_USER_SETTING, (_event, settingsList) => {
       case "useDarkMode":
         darkMode(settingsList.useDarkMode);
         break;
+
       case "enterToSend":
         handleEnterPrefToggle(settingsList.enterToSend);
         break;
+
       case "trayEnabledPref":
       case SETTING_BADGE_POSITION:
       case SETTING_BADGE_SCALE:
       case SETTING_BADGE_TASKBAR:
         document.body.setAttribute("changeicon", "");
         break;
+
+      case SETTING_TRAY_CONVERSATIONS:
+      case SETTING_TRAY_CONVERSATIONS_TEXT:
+        app.trayManager?.setConversationList();
+        break;
+
+      case SETTING_TRAY_CONVERSATIONS_ICON:
+        (document.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)?.setAttribute("refresh", "");
+        break;;
     }
   }
 });

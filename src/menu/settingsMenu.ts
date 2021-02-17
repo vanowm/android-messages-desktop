@@ -14,6 +14,9 @@ import {
   SETTING_BADGE_POSITION,
   SETTING_BADGE_SCALE,
   SETTING_BADGE_TASKBAR,
+  SETTING_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
 } from "../helpers/constants";
 import { separator } from "./items/separator";
 
@@ -126,4 +129,59 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
     settingsMenu.submenu.push(unreadManager.getMenu(SETTING_BADGE_TASKBAR));
   }
 
+/* tray conversations */
+  const click = (item:any) =>
+  {
+    const id = item.id.replace(/[0-9]+$/, ""),
+          val = item.type == "radio" ? item.value : item.checked;
+
+    settings.set(id, val);
+  }
+  const submenuNum:Array<Object> = [];
+  for(let i = 0; i < 11; i++)
+  {
+    submenuNum[submenuNum.length] = {
+      id: SETTING_TRAY_CONVERSATIONS + i,
+      value: i,
+      label: i ? "" + i : "None",
+      type: "radio",
+      click: click,
+    };
+  }
+  const submenuIcon:Array<Object> = [];
+  for(let i = 0; i < 5; i++)
+  {
+    const val = i ? (i * 8 + 8) : 0;
+    submenuIcon[submenuIcon.length] = {
+      id: SETTING_TRAY_CONVERSATIONS_ICON + val,
+      value: val,
+      label: i ? i * 50 + "%" : "Hidden",
+      type: "radio",
+      click: click,
+    };
+  }
+  settingsMenu.submenu.push(
+  separator,
+  {
+    label: "Conversations In Tray",
+    submenu:
+    [
+      {
+        id: SETTING_TRAY_CONVERSATIONS,
+        label: "Show",
+        submenu: submenuNum
+      },
+      {
+        id: SETTING_TRAY_CONVERSATIONS_ICON,
+        label: "Avatar size",
+        submenu: submenuIcon
+      },
+      {
+        id: SETTING_TRAY_CONVERSATIONS_TEXT,
+        label: "Show text",
+        type: "checkbox",
+        click: click
+      }
+    ]
+  });
 }
