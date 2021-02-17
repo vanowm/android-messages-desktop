@@ -25,6 +25,8 @@ import {
   SETTING_TRAY_CONVERSATIONS,
   SETTING_TRAY_CONVERSATIONS_TEXT,
   SETTING_TRAY_CONVERSATIONS_ICON,
+  SETTING_TRAY_CONVERSATIONS_SORT,
+  DEFAULT_TRAY_CONVERSATIONS_SORT,
 } from "./helpers/constants";
 import { SettingsManager } from "./helpers/settingsManager";
 import { TrayManager } from "./helpers/trayManager";
@@ -164,7 +166,11 @@ if (!isFirstInstance) {
         }
       );
 
-      const settingsList = [SETTING_BADGE_POSITION, SETTING_BADGE_SCALE, SETTING_BADGE_TASKBAR, SETTING_TRAY_CONVERSATIONS, SETTING_TRAY_CONVERSATIONS_TEXT, SETTING_TRAY_CONVERSATIONS_ICON];
+      const settingsList = [SETTING_TRAY_CONVERSATIONS,
+                            SETTING_TRAY_CONVERSATIONS_TEXT,
+                            SETTING_TRAY_CONVERSATIONS_ICON,
+                            SETTING_TRAY_CONVERSATIONS_SORT,
+                           ];
       for(let i = 0; i < settingsList.length; i++)
       {
         const name = settingsList[i],

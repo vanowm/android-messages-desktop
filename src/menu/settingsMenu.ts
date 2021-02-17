@@ -18,6 +18,7 @@ import {
   SETTING_TRAY_CONVERSATIONS_TEXT,
   SETTING_TRAY_CONVERSATIONS_ICON,
   TRAY_CONVERSATIONS_MAX,
+  SETTING_TRAY_CONVERSATIONS_SORT,
 } from "../helpers/constants";
 import { separator } from "./items/separator";
 
@@ -182,7 +183,13 @@ if (settingsMenu.submenu != null && !(settingsMenu.submenu instanceof Menu)) {
         label: "Show text",
         type: "checkbox",
         click: click
-      }
+      },
+      {
+        id: SETTING_TRAY_CONVERSATIONS_SORT,
+        label: "Sort Alphabetically",
+        type: "checkbox",
+        click: click
+      },
     ]
   });
 }
