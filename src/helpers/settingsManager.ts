@@ -6,9 +6,16 @@ import {
   SETTING_NOTIFICATION_SOUND,
   SETTING_START_IN_TRAY,
   SETTING_SYSTEM_DARK_MODE,
+  SETTING_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
+  DEFAULT_TRAY_CONVERSATIONS,
+  DEFAULT_TRAY_CONVERSATIONS_TEXT,
+  DEFAULT_TRAY_CONVERSATIONS_ICON,
 } from "./constants";
 
 export class SettingsManager {
+  [index:string]:string|number|boolean|Set<string>|Function;
   public startInTray = settings.get(SETTING_START_IN_TRAY, false) as boolean;
   public autoHideMenu = settings.get(SETTING_AUTOHIDE_MENU, false) as boolean;
   public enterToSend = settings.get(SETTING_ENTER_TO_SEND, true) as boolean;
@@ -53,6 +60,22 @@ export class SettingsManager {
       SETTING_SYSTEM_DARK_MODE,
       (newVal) => (this.systemDarkMode = newVal)
     );
+    const list = [[SETTING_TRAY_CONVERSATIONS           , DEFAULT_TRAY_CONVERSATIONS],
+                  [SETTING_TRAY_CONVERSATIONS_TEXT      , DEFAULT_TRAY_CONVERSATIONS_TEXT],
+                  [SETTING_TRAY_CONVERSATIONS_ICON      , DEFAULT_TRAY_CONVERSATIONS_ICON],
+                 ];
+    for(let i = 0; i < list.length; i++)
+    {
+      const key = list[i][0] as string,
+            val = list[i][1];
+
+      this[key] = settings.get(key, val) as typeof val;
+      this.addWatcher<boolean>(
+        key,
+        (newVal) => this[key] = newVal
+      );
+
+    }
   }
 
   public addWatcher<T>(name: string, callback: (newVal: T) => unknown): void {

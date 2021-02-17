@@ -18,6 +18,9 @@ import {
   IS_WINDOWS,
   RESOURCES_PATH,
   SETTING_TRAY_ENABLED,
+  SETTING_TRAY_CONVERSATIONS,
+  SETTING_TRAY_CONVERSATIONS_TEXT,
+  SETTING_TRAY_CONVERSATIONS_ICON,
 } from "./helpers/constants";
 import { SettingsManager } from "./helpers/settingsManager";
 import { TrayManager } from "./helpers/trayManager";
@@ -143,6 +146,27 @@ if (!isFirstInstance) {
         settingsManager.hideNotificationContent;
       (useSystemDarkModeMenuItem as Electron.MenuItem).checked =
         settingsManager.systemDarkMode;
+
+      const settingsList = [SETTING_TRAY_CONVERSATIONS, SETTING_TRAY_CONVERSATIONS_TEXT, SETTING_TRAY_CONVERSATIONS_ICON];
+      for(let i = 0; i < settingsList.length; i++)
+      {
+        const name = settingsList[i],
+              menuItem = menuInstance.getMenuItemById(name + (typeof settingsManager[name] == "boolean" ? "" : settingsManager[name])) as Electron.MenuItem;
+        if (menuItem)
+        {
+          menuItem.checked = settingsManager[name] as boolean;
+        }
+
+        settingsManager.addWatcher(
+          name,
+          function(newValue:any)
+          {
+            let obj:any = {};
+            obj[name] = newValue;
+            mainWindow.webContents.send(EVENT_UPDATE_USER_SETTING, obj);
+          }
+        );
+      }
     }
 
     autoUpdater.checkForUpdatesAndNotify();
