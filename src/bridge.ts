@@ -51,11 +51,103 @@ function createUnreadListener() {
 
 function createConversationListeners()
 {
-  const node = document.querySelector("mws-conversations-list > nav.conversation-list");
+  const node = document.querySelector("main");
   if (!node)
     return;
 
   let observer:MutationObserver;
+  let timer:NodeJS.Timer;
+  let convObserver:MutationObserver;
+  let lastList:Array<Conversation> = [];
+  const setList = (convList:HTMLElement) =>
+  {
+    const list:Array<Conversation> = [];
+    // gather information about conversations
+    // in the future we can use settings to store number of conversations to show
+//          for(let i = 0, conv, data; i < Math.min(settings.get(SETTING_TRAY_CONVERSATIONS, DEFAULT_TRAY_CONVERSATIONS) as number, convList.children.length); i++)
+    for(let i = 0, conv, data; i < Math.min(TRAY_CONVERSATIONS_MAX, convList.children.length); i++)
+    {
+      const info = {} as Conversation;
+      let unread = false;
+      conv = convList.children[i];
+      if (data = conv.querySelector("[data-e2e-conversation-name]"))
+        info.name = data.textContent as string;
+
+      if (data = conv.querySelector("mws-conversation-snippet"))
+        info.text = data.textContent as string;
+
+      if (data = conv.querySelector("a[data-e2e-conversation]") as HTMLAnchorElement)
+      {
+        unread = data.getAttribute("data-e2e-is-unread") == "true";
+        info.id = data.getAttribute("href") as string;
+      }
+
+      if (data = conv.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
+      {
+        const size = settings.get(SETTING_TRAY_CONVERSATIONS_ICON, DEFAULT_TRAY_CONVERSATIONS_ICON) as number;
+        if (size)
+        {
+          const canvas = document.createElement("canvas"),
+                ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+          canvas.width = size;
+          canvas.height = size;
+          ctx.drawImage(data, 0, 0, size, size);
+          if (unread)
+          {
+            ctx.fillStyle = "red";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 1;
+            ctx.arc(size - 16.6*size/100, 16.6*size/100, 14.933333333333335*size/100, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+          }
+          info.icon = canvas.toDataURL();
+        }
+      }
+
+
+      list[list.length] = info;
+    }
+    lastList = list;
+    app.trayManager?.setConversationList(list);
+  } // setList();
+  const setConvObserver = (convList:HTMLElement)=>
+  {
+    if (!convList || convList.hasAttribute("inited"))
+      return;
+
+    convObserver && convObserver.disconnect();
+    convObserver = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
+    {
+      let canvas:HTMLElement|boolean = false;
+      for(let i = 0; i < m.length; i++)
+      {
+        if ((canvas = m[i].target as HTMLElement).tagName == "CANVAS")
+        {
+          if (m[i].attributeName == "refresh" && canvas.getAttribute("refresh") == null)
+            return;
+
+          break;
+        }
+
+        canvas = false;
+      }
+      if (!canvas)
+        return;
+
+      canvas.removeAttribute("refresh");
+      clearTimeout(timer);
+      timer = setTimeout(()=>setList(convList), 200);
+    });
+    convObserver.observe(convList,
+    {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["width","refresh"]
+    });
+    convList.setAttribute("inited", "");
+  }
   new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
   {
     for(let i = 0; i < m.length; i++)
@@ -63,97 +155,16 @@ function createConversationListeners()
       for(let a = 0; a < m[i].addedNodes.length; a++)
       {
         const convList = m[i].addedNodes[a] as HTMLElement;
-        if (!convList.classList.contains("conv-container"))
+        if (!convList.classList?.contains("conv-container"))
           continue;
 
-        let lastList:Array<Conversation> = [];
-        const setList = () =>
-        {
-          const list:Array<Conversation> = [];
-          // gather information about conversations
-          // in the future we can use settings to store number of conversations to show
-//          for(let i = 0, conv, data; i < Math.min(settings.get(SETTING_TRAY_CONVERSATIONS, DEFAULT_TRAY_CONVERSATIONS) as number, convList.children.length); i++)
-          for(let i = 0, conv, data; i < Math.min(TRAY_CONVERSATIONS_MAX, convList.children.length); i++)
-          {
-            const info = {} as Conversation;
-            let unread = false;
-            conv = convList.children[i];
-            if (data = conv.querySelector("[data-e2e-conversation-name]"))
-              info.name = data.textContent as string;
-
-            if (data = conv.querySelector("mws-conversation-snippet"))
-              info.text = data.textContent as string;
-
-            if (data = conv.querySelector("a[data-e2e-conversation]") as HTMLAnchorElement)
-            {
-              unread = data.getAttribute("data-e2e-is-unread") == "true";
-              info.id = data.getAttribute("href") as string;
-            }
-
-            if (data = conv.querySelector("canvas.canvas-avatar") as HTMLCanvasElement)
-            {
-              const size = settings.get(SETTING_TRAY_CONVERSATIONS_ICON, DEFAULT_TRAY_CONVERSATIONS_ICON) as number;
-              if (size)
-              {
-                const canvas = document.createElement("canvas"),
-                      ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-                canvas.width = size;
-                canvas.height = size;
-                ctx.drawImage(data, 0, 0, size, size);
-                if (unread)
-                {
-                  ctx.fillStyle = "red";
-                  ctx.strokeStyle = "white";
-                  ctx.lineWidth = 1;
-                  ctx.arc(size - 16.6*size/100, 16.6*size/100, 14.933333333333335*size/100, 0, 2 * Math.PI);
-                  ctx.fill();
-                  ctx.stroke();
-                }
-                info.icon = canvas.toDataURL();
-              }
-            }
-
-
-            list[list.length] = info;
-          }
-          lastList = list;
-          app.trayManager?.setConversationList(list);
-        } // setList();
-
-        observer && observer.disconnect();
-        let timer:NodeJS.Timer;
-        observer = new MutationObserver((m: MutationRecord[], o: MutationObserver) =>
-        {
-          let canvas:HTMLElement|boolean = false;
-          for(let i = 0; i < m.length; i++)
-          {
-            if ((canvas = m[i].target as HTMLElement).tagName == "CANVAS")
-            {
-              if (m[i].attributeName == "refresh" && canvas.getAttribute("refresh") == null)
-                return;
-
-              break;
-            }
-
-            canvas = false;
-          }
-          if (!canvas)
-            return;
-
-          canvas.removeAttribute("refresh");
-          clearTimeout(timer);
-          timer = setTimeout(setList, 200);
-        });
-        observer.observe(convList,
-        {
-          subtree: true,
-          attributes: true,
-          attributeFilter: ["width","refresh"]
-        });
+        setConvObserver(convList);
+        return;
       } // for m[i].addedNodes
     } // for m
-  }).observe(node, {childList: true});
+    setConvObserver(document.getElementsByClassName("conv-container")[0] as HTMLElement);
+
+  }).observe(node, {childList: true, subtree: true});
 } // createConversationListeners()
 
 window.addEventListener("load", () => {
