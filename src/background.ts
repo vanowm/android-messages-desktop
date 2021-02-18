@@ -166,7 +166,10 @@ if (!isFirstInstance) {
         }
       );
 
-      const settingsList = [SETTING_TRAY_CONVERSATIONS,
+      const settingsList = [SETTING_BADGE_POSITION,
+                            SETTING_BADGE_SCALE,
+                            SETTING_BADGE_TASKBAR,
+                            SETTING_TRAY_CONVERSATIONS,
                             SETTING_TRAY_CONVERSATIONS_TEXT,
                             SETTING_TRAY_CONVERSATIONS_ICON,
                             SETTING_TRAY_CONVERSATIONS_SORT,
